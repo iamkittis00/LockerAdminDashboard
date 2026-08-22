@@ -1,0 +1,494 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ===== Locker Box — 2D Metallic Style ===== */
+
+* {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.locker-scene {
+    width: 100%;
+    min-height: 100vh;
+    background-color: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1rem;
+    box-sizing: border-box;
+}
+
+.locker-wrapper {
+    width: 35%;
+    max-width: 500px;
+    min-width: 280px;
+    height: 85vh;
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.locker-body {
+    width: 100%;
+    flex: 1;
+    background-color: #B3B3B3;
+    border-radius: 4px 4px 0 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow:
+        4px 4px 20px rgba(0, 0, 0, 0.6),
+        inset -2px -2px 6px rgba(0, 0, 0, 0.12),
+        inset 2px 2px 4px rgba(255, 255, 255, 0.25);
+    box-sizing: border-box;
+}
+
+.inline-locker {
+    width: 95%;
+    height: 96%;
+    background-color: #c0c0c0;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: repeat(4, 1fr);
+    gap: 2%;
+    padding: 3%;
+    box-sizing: border-box;
+    justify-items: center;
+    align-items: center;
+}
+
+.door-locker {
+    width: 100%;
+    height: 100%;
+    background-color: #d4d4d4;
+    border-radius: 2px;
+    position: relative;
+    cursor: pointer;
+    box-shadow:
+        inset 1px 1px 3px rgba(255, 255, 255, 0.65),
+        inset -1px -1px 3px rgba(0, 0, 0, 0.22),
+        1px 1px 3px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+    .door-locker:hover {
+        background-color: #e0e0e0;
+    }
+}
+
+/* status = 1 → ถูกใช้งาน (แดง) */
+.door-used {
+    background-color: #ffcdd2 !important;
+    box-shadow:
+        inset 1px 1px 3px rgba(255, 255, 255, 0.4),
+        inset -1px -1px 3px rgba(180, 0, 0, 0.2),
+        1px 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+@media (hover: hover) {
+    .door-used:hover {
+        background-color: #ef9a9a !important;
+    }
+}
+
+/* status = 0 → ว่าง (เขียว) */
+.door-free {
+    background-color: #E6E6E6 !important;
+    box-shadow:
+        inset 1px 1px 3px rgba(255, 255, 255, 0.4),
+        inset -1px -1px 3px rgba(0, 100, 0, 0.2),
+        1px 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+@media (hover: hover) {
+    .door-free:hover {
+        background-color: #b0e0b0 !important;
+    }
+}
+
+/* status = 1 และเกินเวลา → แดงส้ม (Overdue) */
+.door-overdue {
+    background-color: #ef4444 !important;
+    box-shadow:
+        inset 1px 1px 3px rgba(255, 255, 255, 0.4),
+        inset -1px -1px 3px rgba(100, 0, 0, 0.2),
+        1px 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+@media (hover: hover) {
+    .door-overdue:hover {
+        background-color: #dc2626 !important;
+    }
+}
+
+/* locker ID label */
+.locker-id {
+    position: absolute;
+    bottom: 5%;
+    width: 100%;
+    text-align: center;
+    font-size: clamp(8px, 2vw, 12px);
+    font-weight: 700;
+    color: #444;
+    user-select: none;
+    letter-spacing: 0.5px;
+}
+
+/* ป้ายแสดงสถานะบนประตู */
+.door-label {
+    position: absolute;
+    top: 14%;
+    left: 8%;
+    right: 8%;
+    height: 25%;
+    background-color: #ffffff;
+    border-radius: 2px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: min(2.5vw, 8px);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    text-align: center;
+    padding: 0 2px;
+}
+
+.door-used .door-label {
+    color: #d32f2f;
+}
+
+.door-free .door-label {
+    color: #2e7d32;
+}
+
+.door-overdue .door-label {
+    color: #991b1b;
+}
+
+/* มือจับประตู */
+.door-locker::after {
+    content: "";
+    position: absolute;
+    bottom: 16%;
+    left: 25%;
+    right: 25%;
+    height: 9%;
+    background-color: #9a9a9a;
+    border-radius: 3px;
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.3),
+        inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+/* ===== ขาตู้ ===== */
+.locker-legs {
+    display: flex;
+    justify-content: space-between;
+    width: 80%;
+    padding: 0 10px;
+    box-sizing: border-box;
+}
+
+.leg {
+    width: clamp(8px, 2vw, 12px);
+    height: clamp(12px, 3vw, 18px);
+    background: linear-gradient(to bottom, #aaaaaa, #888888);
+    border-radius: 0 0 3px 3px;
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* ===== เงาใต้ตู้ ===== */
+.locker-ground-shadow {
+    width: 90%;
+    height: 16px;
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.3) 0%, transparent 70%);
+    margin-top: 2px;
+    border-radius: 50%;
+}
+
+/* ===== Toast Notification ===== */
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.toast-notification {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 14px 24px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    z-index: 9999;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    animation: slideInDown 0.35s ease;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+}
+
+.toast-success {
+    background: linear-gradient(135deg, #1a9e5c, #28c76f);
+    border-left: 5px solid #0e7a44;
+}
+
+.toast-error {
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+    border-left: 5px solid #922b21;
+}
+
+/* ===== Popup Styles ===== */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.popup-content {
+    background-color: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    width: 320px;
+    max-width: 90%;
+    text-align: center;
+}
+
+.popup-content h2 {
+    margin-top: 0;
+    color: #1f2937;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.locker-details {
+    text-align: left;
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+    color: #4b5563;
+    background: #f9fafb;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.locker-details p {
+    margin: 8px 0;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 6px;
+}
+
+.locker-details p:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.locker-details strong {
+    color: #111827;
+    display: inline-block;
+    width: 100px;
+}
+
+.popup-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.popup-btn-action {
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+    flex: 1;
+}
+
+.popup-btn-action:hover {
+    background-color: #4338ca;
+}
+
+.popup-btn-close {
+    background-color: #9ca3af;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+    flex: 1;
+}
+
+.popup-btn-close:hover {
+    background-color: #6b7280;
+}
+
+/* ===== Responsive Breakpoints ===== */
+
+/* Large Tablets & Small Laptops */
+@media screen and (max-width: 1024px) {
+    .locker-wrapper {
+        width: 55%;
+    }
+
+    .door-label {
+        font-size: clamp(6px, 1.5vw, 9px);
+        left: 5%;
+        right: 5%;
+    }
+
+    .popup-content {
+        width: 360px;
+    }
+}
+
+/* Tablets & Mobile Landscape */
+@media screen and (max-width: 768px) {
+    .locker-wrapper {
+        width: 75%;
+        height: 80vh;
+    }
+
+    .door-label {
+        font-size: clamp(5px, 2.5vw, 8px);
+        left: 4%;
+        right: 4%;
+    }
+
+    .locker-id {
+        font-size: clamp(7px, 2.5vw, 11px);
+    }
+
+    .popup-content {
+        width: 90%;
+        max-width: 340px;
+        padding: 20px;
+    }
+
+    .popup-content h2 {
+        font-size: 1.1rem;
+        margin-bottom: 16px;
+    }
+
+    .locker-details {
+        font-size: 0.85rem;
+        padding: 10px;
+    }
+
+    .locker-details strong {
+        width: 85px;
+        font-size: 0.8rem;
+    }
+
+    .popup-btn-action,
+    .popup-btn-close {
+        padding: 9px 14px;
+        font-size: 0.85rem;
+    }
+}
+
+/* Standard Mobile Phones */
+@media screen and (max-width: 480px) {
+    .locker-scene {
+        padding: 8px 4px;
+        min-height: 100dvh;
+    }
+
+    .locker-wrapper {
+        width: 92%;
+        height: 78vh;
+        min-height: 420px;
+    }
+
+    .inline-locker {
+        gap: 3%;
+        padding: 3%;
+    }
+
+    .door-label {
+        font-size: clamp(5px, 3vw, 7px);
+        left: 3%;
+        right: 3%;
+        height: 22%;
+        top: 12%;
+        letter-spacing: 0;
+    }
+
+    .locker-id {
+        font-size: clamp(6px, 3vw, 10px);
+    }
+
+    .locker-id-container {
+        gap: 1px;
+    }
+
+    .door-locker::after {
+        height: 7%;
+        bottom: 14%;
+        left: 20%;
+        right: 20%;
+    }
+
+    .popup-content {
+        width: 92%;
+        padding: 18px;
+    }
+
+    .popup-buttons {
+        gap: 8px;
+    }
+
+    .popup-btn-action,
+    .popup-btn-close {
+        padding: 10px 12px;
+        font-size: 0.8rem;
+        border-radius: 8px;
+    }
+}
+
+/* Very Small Phones (< 360px) */
+@media screen and (max-width: 360px) {
+    .locker-wrapper {
+        width: 98%;
+        height: 75vh;
+        min-height: 380px;
+    }
+
+    .inline-locker {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: repeat(6, 1fr);
+        gap: 3%;
+    }
+
+    .door-label {
+        font-size: 6px;
+    }
+}

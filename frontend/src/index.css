@@ -1,0 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Sarabun", sans-serif;
+}
+
+body {
+  background-color: #f1f5f9;
+  /* slate-100 */
+  overflow-x: hidden;
+  max-width: 100vw;
+}
