@@ -7,15 +7,17 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+    globals: true,
+  },
   build: {
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('recharts') || id.includes('d3')) {
-              return 'vendor-charts';
-            }
             return 'vendor';
           }
         }

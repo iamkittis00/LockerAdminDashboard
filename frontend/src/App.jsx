@@ -1,18 +1,22 @@
-// src/App.jsx
-import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Login from './Login';
-import Dashboard from './Dashboard';
-import Locker from './components/locker';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import LockerPage from './pages/LockerPage';
+import RequireAuth from './components/RequireAuth';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
-        <Route path="/" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/locker" element={<Locker />} />
+        <Route path="/" element={<LoginPage />} />
+        <Route
+          path="/dashboard"
+          element={<RequireAuth><DashboardPage /></RequireAuth>}
+        />
+        <Route
+          path="/locker"
+          element={<RequireAuth><LockerPage /></RequireAuth>}
+        />
       </Routes>
     </BrowserRouter>
   );

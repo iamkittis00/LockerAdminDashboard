@@ -1,191 +1,422 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-/* ===== Locker Box — 2D Metallic Style ===== */
-
-* {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
+/* ===== Locker Box — ตู้ล็อกเกอร์จริง 2 ตู้ประกบหลัง 6x3 ต่อฝั่ง ===== */
 
 .locker-scene {
     width: 100%;
     min-height: 100vh;
-    background-color: transparent;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 2rem 1rem;
+    padding: clamp(4.5rem, 8vw, 6rem) 1rem 2rem;
     box-sizing: border-box;
 }
 
-.locker-wrapper {
-    width: 35%;
-    max-width: 500px;
-    min-width: 280px;
-    height: 85vh;
-    min-height: 500px;
+.locker-stage {
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 2vw, 20px);
+    max-width: 100%;
+}
+
+/* ===== ปุ่มสลับตู้ — ไอคอนกลม เรียบ ไม่แข่งกับตัวตู้ ===== */
+.cabinet-nav {
+    flex: 0 0 auto;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    line-height: 1;
+    font-weight: 600;
+    color: var(--color-brand);
+    background-color: white;
+    border: 1px solid var(--color-hairline);
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.cabinet-nav:hover {
+    border-color: var(--color-brand);
+    box-shadow: 0 4px 14px -4px color-mix(in oklch, var(--color-brand) 35%, transparent);
+    transform: translateY(-1px);
+}
+
+.cabinet-nav:active {
+    transform: translateY(0);
+}
+
+.cabinet-nav:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+}
+
+.cabinet-nav:disabled {
+    color: oklch(from var(--color-brand) 0.75 0.01 h);
+    background-color: oklch(from var(--color-canvas) 0.98 0 h);
+    border-color: var(--color-hairline);
+    cursor: default;
+    box-shadow: none;
+    transform: none;
+}
+
+.cabinet-column {
+    /* ตัวแปรขนาดช่องประกาศไว้ตรงนี้ที่เดียว — .cabinet-frame กับตัวล็อคความกว้างด้านล่างใช้ร่วมกัน */
+    --door-w: 104px;
+    --door-h: 120px;
+    --gap: 10px;
+    --pad: 14px;
+    --frame: 15px;
+    --labels-w: 96px;
+
     display: flex;
     flex-direction: column;
     align-items: center;
-    transition: all 0.3s ease;
+    min-width: 0;
 }
 
-.locker-body {
-    width: 100%;
-    flex: 1;
-    background-color: #B3B3B3;
-    border-radius: 4px 4px 0 0;
+/* ขนาดตัวตู้เต็มที่ (locker-body / front-body ต้องสูงเท่ากันเป๊ะ) — ใช้ล็อคพื้นที่ตรงกลาง
+   ไม่ให้ปุ่มลูกศรขยับ และไม่ให้หน้าเว็บกระโดดขึ้นลงตอนสลับมุมมอง "ด้านหน้า" */
+.cabinet-column {
+    --content-w: calc(6 * var(--door-w) + 5 * var(--gap) + 2 * var(--pad) + 2 * var(--frame) + var(--labels-w));
+    --content-h: calc(3 * var(--door-h) + 2 * var(--gap) + 2 * var(--pad) + 2 * var(--frame));
+}
+
+.cabinet-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 16px;
+}
+
+.cabinet-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--color-ink-strong);
+}
+
+.cabinet-dots {
+    display: flex;
+    gap: 6px;
+}
+
+.cabinet-dot {
+    width: 18px;
+    height: 5px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background-color: oklch(from var(--color-brand) 0.88 0.015 h);
+    cursor: pointer;
+    transition: background-color 0.2s, width 0.2s;
+}
+
+.cabinet-dot.is-active {
+    width: 26px;
+    background: var(--color-brand);
+}
+
+.cabinet-dot.is-front {
+    border-radius: 3px;
+}
+
+.cabinet-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+/* กล่องในสุด: ล็อคความกว้าง = ตู้เต็ม 1 ฝั่งเสมอ (ปุ่มเลยไม่ขยับ) และ clip
+   ไม่ให้อนิเมชั่นเลื่อนเข้าล้นออกไปทำให้ scrollbar โผล่วาบตอนสลับ */
+.cabinet-viewport {
+    width: var(--content-w);
+    max-width: 100%;
+    overflow: hidden;
     display: flex;
     justify-content: center;
+}
+
+/* ===== อนิเมชั่นตอนสลับมุมมอง (หน้า/ซ้าย/ขวา) ===== */
+.view-panel {
+    animation: view-enter 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.view-panel-forward {
+    animation-name: view-enter-from-right;
+}
+
+.view-panel-backward {
+    animation-name: view-enter-from-left;
+}
+
+@keyframes view-enter-from-right {
+    from { opacity: 0; transform: translateX(28px) scale(0.98); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes view-enter-from-left {
+    from { opacity: 0; transform: translateX(-28px) scale(0.98); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .view-panel-forward,
+    .view-panel-backward {
+        animation: none;
+    }
+}
+
+/* ===== ขนาดช่องคุมด้วยตัวแปร (ประกาศไว้ที่ .cabinet-column) — ป้ายขนาดจึงตรงแถวเสมอ ===== */
+.cabinet-frame {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: fit-content;
+}
+
+/* ===== มุมมอง "ด้านหน้า" — ภาพรวมตู้ทั้งชุดก่อนเลือกฝั่ง ===== */
+.front-frame {
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    width: fit-content;
+}
+
+.front-body {
+    display: flex;
+    width: min(78vw, 460px);
+    height: var(--content-h);
+    background: linear-gradient(160deg, #c4c4c8 0%, #a9a9ae 100%);
+    border-radius: 6px 6px 0 0;
     box-shadow:
-        4px 4px 20px rgba(0, 0, 0, 0.6),
-        inset -2px -2px 6px rgba(0, 0, 0, 0.12),
-        inset 2px 2px 4px rgba(255, 255, 255, 0.25);
+        0 24px 48px -20px rgba(15, 23, 42, 0.45),
+        inset 0 2px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -3px 8px rgba(0, 0, 0, 0.18);
+    box-sizing: border-box;
+    padding: 15px;
+    gap: 4px;
+}
+
+.front-half {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    background-color: #97979d;
+    border-radius: 2px;
+    padding-bottom: 14px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.front-divider {
+    width: 3px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 2px;
+}
+
+.front-screen-mark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 62%;
+    aspect-ratio: 4 / 3;
+    border-radius: 8px;
+    background-color: #aecbf5;
+    border: 4px solid #14213d;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.front-half-label {
+    padding: 5px 14px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--color-ink-strong);
+}
+
+.nav-hint {
+    margin: 14px 0 0;
+    font-size: 0.78rem;
+    color: var(--color-ink-soft);
+    text-align: center;
+}
+
+.size-labels {
+    display: grid;
+    grid-template-rows: repeat(3, var(--door-h));
+    row-gap: var(--gap);
+    padding-top: calc(var(--frame) + var(--pad));
+    flex: 0 0 auto;
+}
+
+.size-labels span {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+    white-space: nowrap;
+}
+
+.locker-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: fit-content;
+}
+
+/* ===== ตัวตู้ — โลหะจริง ไม่ใช่การ์ดแบน ===== */
+.locker-body {
+    height: var(--content-h);
+    background: linear-gradient(160deg, #c4c4c8 0%, #a9a9ae 100%);
+    border-radius: 6px 6px 0 0;
+    padding: var(--frame);
+    box-shadow:
+        0 24px 48px -20px rgba(15, 23, 42, 0.45),
+        inset 0 2px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -3px 8px rgba(0, 0, 0, 0.18);
     box-sizing: border-box;
 }
 
 .inline-locker {
-    width: 95%;
-    height: 96%;
-    background-color: #c0c0c0;
+    background-color: #97979d;
+    border-radius: 2px;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: repeat(4, 1fr);
-    gap: 2%;
-    padding: 3%;
+    grid-template-columns: repeat(6, var(--door-w));
+    grid-template-rows: repeat(3, var(--door-h));
+    gap: var(--gap);
+    padding: var(--pad);
     box-sizing: border-box;
-    justify-items: center;
-    align-items: center;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
+/* ===== ประตูตู้ ===== */
 .door-locker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
     width: 100%;
     height: 100%;
-    background-color: #d4d4d4;
-    border-radius: 2px;
-    position: relative;
+    padding: 11% 8% 7%;
+    border: none;
+    border-radius: 3px;
+    background-color: #dcdce0;
     cursor: pointer;
+    box-sizing: border-box;
+    font-family: inherit;
     box-shadow:
-        inset 1px 1px 3px rgba(255, 255, 255, 0.65),
-        inset -1px -1px 3px rgba(0, 0, 0, 0.22),
-        1px 1px 3px rgba(0, 0, 0, 0.15);
-    transition: background-color 0.15s ease;
+        inset 0 1px 0 rgba(255, 255, 255, 0.7),
+        inset 0 -6px 10px -6px rgba(0, 0, 0, 0.22),
+        0 1px 2px rgba(0, 0, 0, 0.12);
+    transition: filter 0.15s ease, transform 0.1s ease;
     -webkit-tap-highlight-color: transparent;
 }
 
 @media (hover: hover) {
     .door-locker:hover {
-        background-color: #e0e0e0;
+        filter: brightness(1.05);
+        transform: translateY(-1px);
     }
 }
 
-/* status = 1 → ถูกใช้งาน (แดง) */
-.door-used {
-    background-color: #ffcdd2 !important;
-    box-shadow:
-        inset 1px 1px 3px rgba(255, 255, 255, 0.4),
-        inset -1px -1px 3px rgba(180, 0, 0, 0.2),
-        1px 1px 3px rgba(0, 0, 0, 0.15);
+.door-locker:active {
+    transform: translateY(0);
 }
 
-@media (hover: hover) {
-    .door-used:hover {
-        background-color: #ef9a9a !important;
-    }
+.door-locker:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
 }
 
-/* status = 0 → ว่าง (เขียว) */
-.door-free {
-    background-color: #E6E6E6 !important;
-    box-shadow:
-        inset 1px 1px 3px rgba(255, 255, 255, 0.4),
-        inset -1px -1px 3px rgba(0, 100, 0, 0.2),
-        1px 1px 3px rgba(0, 0, 0, 0.15);
-}
-
-@media (hover: hover) {
-    .door-free:hover {
-        background-color: #b0e0b0 !important;
-    }
-}
-
-/* status = 1 และเกินเวลา → แดงส้ม (Overdue) */
-.door-overdue {
-    background-color: #ef4444 !important;
-    box-shadow:
-        inset 1px 1px 3px rgba(255, 255, 255, 0.4),
-        inset -1px -1px 3px rgba(100, 0, 0, 0.2),
-        1px 1px 3px rgba(0, 0, 0, 0.15);
-}
-
-@media (hover: hover) {
-    .door-overdue:hover {
-        background-color: #dc2626 !important;
-    }
-}
-
-/* locker ID label */
-.locker-id {
-    position: absolute;
-    bottom: 5%;
-    width: 100%;
-    text-align: center;
-    font-size: clamp(8px, 2vw, 12px);
-    font-weight: 700;
-    color: #444;
-    user-select: none;
-    letter-spacing: 0.5px;
-}
-
-/* ป้ายแสดงสถานะบนประตู */
 .door-label {
-    position: absolute;
-    top: 14%;
-    left: 8%;
-    right: 8%;
-    height: 25%;
-    background-color: #ffffff;
+    width: 100%;
+    padding: 3px 2px;
+    background-color: rgba(255, 255, 255, 0.85);
     border-radius: 2px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: min(2.5vw, 8px);
+    font-size: 0.6rem;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.2px;
     text-align: center;
-    padding: 0 2px;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.door-used .door-label {
-    color: #d32f2f;
+.door-handle {
+    width: 56%;
+    height: 7px;
+    margin-top: auto;
+    background: linear-gradient(180deg, #8a8a90, #6f6f74);
+    border-radius: 3px;
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.35),
+        inset 0 1px 1px rgba(255, 255, 255, 0.35);
+}
+
+.door-id {
+    font-size: 0.66rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #46464c;
+    user-select: none;
+}
+
+/* ===== สีตามสถานะ — คงโทนเดิม ปรับให้กลืนกับพื้นโลหะมากขึ้น ===== */
+
+.door-free {
+    background-color: #dcdce0;
 }
 
 .door-free .door-label {
-    color: #2e7d32;
+    color: #3d7a52;
+}
+
+.door-used {
+    background-color: #bfe6c8;
+}
+
+.door-used .door-label {
+    color: #1a7a3d;
+}
+
+.door-overdue {
+    background-color: #f2a8a8;
 }
 
 .door-overdue .door-label {
-    color: #991b1b;
+    color: #a11d1d;
 }
 
-/* มือจับประตู */
-.door-locker::after {
-    content: "";
-    position: absolute;
-    bottom: 16%;
-    left: 25%;
-    right: 25%;
-    height: 9%;
-    background-color: #9a9a9a;
-    border-radius: 3px;
-    box-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.3),
-        inset 0 1px 1px rgba(255, 255, 255, 0.4);
+.door-overdue {
+    animation: pulse-overdue 2.4s ease-in-out infinite;
 }
 
-/* ===== ขาตู้ ===== */
+@keyframes pulse-overdue {
+    0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -6px 10px -6px rgba(0,0,0,0.22), 0 1px 2px rgba(0,0,0,0.12); }
+    50% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -6px 10px -6px rgba(0,0,0,0.22), 0 0 0 3px rgba(220,38,38,0.25); }
+}
+
+.door-screen {
+    background-color: #aecbf5;
+}
+
+.door-screen .door-label {
+    color: #1e4f9c;
+}
+
+/* ===== ขาตู้ + เงา ===== */
 .locker-legs {
     display: flex;
     justify-content: space-between;
@@ -195,70 +426,60 @@
 }
 
 .leg {
-    width: clamp(8px, 2vw, 12px);
-    height: clamp(12px, 3vw, 18px);
-    background: linear-gradient(to bottom, #aaaaaa, #888888);
+    width: 13px;
+    height: 17px;
+    background: linear-gradient(180deg, #9a9aa0, #77777c);
     border-radius: 0 0 3px 3px;
-    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* ===== เงาใต้ตู้ ===== */
 .locker-ground-shadow {
-    width: 90%;
-    height: 16px;
-    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.3) 0%, transparent 70%);
+    width: 88%;
+    height: 18px;
+    background: radial-gradient(ellipse at center, rgba(15, 23, 42, 0.28) 0%, transparent 72%);
     margin-top: 2px;
     border-radius: 50%;
 }
 
-/* ===== Toast Notification ===== */
-@keyframes slideInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* ===== คำอธิบายสี ===== */
+.locker-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 16px;
+    margin-top: 20px;
+    padding: 9px 16px;
+    background-color: white;
+    border: 1px solid var(--color-hairline);
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-.toast-notification {
-    position: fixed;
-    top: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 14px 24px;
-    border-radius: 10px;
-    font-size: 15px;
+.locker-legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
     font-weight: 600;
-    color: #fff;
-    z-index: 9999;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    animation: slideInDown 0.35s ease;
-    white-space: nowrap;
-    letter-spacing: 0.3px;
+    color: var(--color-ink);
 }
 
-.toast-success {
-    background: linear-gradient(135deg, #1a9e5c, #28c76f);
-    border-left: 5px solid #0e7a44;
+.locker-legend i {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
 }
 
-.toast-error {
-    background: linear-gradient(135deg, #c0392b, #e74c3c);
-    border-left: 5px solid #922b21;
-}
+.dot-free { background-color: #b8b8bd; }
+.dot-used { background-color: #34a853; }
+.dot-overdue { background-color: #dc2626; }
+.dot-screen { background-color: #3b76e0; }
 
-/* ===== Popup Styles ===== */
+/* ===== Popup ===== */
 .popup-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.45);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -268,227 +489,190 @@
 
 .popup-content {
     background-color: white;
-    padding: 24px;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-    width: 320px;
-    max-width: 90%;
-    text-align: center;
+    padding: 26px;
+    border-radius: 18px;
+    box-shadow: 0 24px 60px -16px rgba(15, 23, 42, 0.35);
+    width: 360px;
+    max-width: 100%;
+    max-height: 90dvh;
+    overflow-y: auto;
+    text-align: left;
 }
 
 .popup-content h2 {
-    margin-top: 0;
-    color: #1f2937;
-    font-size: 1.25rem;
+    margin: 0 0 18px;
+    color: var(--color-ink-strong);
+    font-size: 1.15rem;
     font-weight: 700;
-    margin-bottom: 20px;
+}
+
+.popup-loading {
+    color: var(--color-ink-soft);
+    margin: 20px 0;
+    text-align: center;
+}
+
+.popup-note {
+    margin-bottom: 16px;
+    padding: 10px 12px;
+    background-color: var(--color-brand-tint);
+    border-left: 3px solid var(--color-brand);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: oklch(from var(--color-brand) 0.35 0.05 h);
 }
 
 .locker-details {
-    text-align: left;
-    margin-bottom: 24px;
-    font-size: 0.95rem;
-    color: #4b5563;
-    background: #f9fafb;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
+    margin-bottom: 22px;
+    font-size: 0.9rem;
+    color: var(--color-ink);
+    background: oklch(from var(--color-brand) 0.98 0.004 h);
+    padding: 4px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--color-hairline);
 }
 
 .locker-details p {
-    margin: 8px 0;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-hairline);
 }
 
 .locker-details p:last-child {
     border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
 }
 
 .locker-details strong {
-    color: #111827;
-    display: inline-block;
-    width: 100px;
+    color: oklch(from var(--color-brand) 0.3 0.02 h);
+    font-weight: 600;
+    flex: 0 0 auto;
 }
 
 .popup-buttons {
     display: flex;
-    gap: 12px;
-    justify-content: center;
+    gap: 10px;
+}
+
+.popup-btn-action,
+.popup-btn-close {
+    flex: 1;
+    padding: 11px 18px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: inherit;
+    font-size: 0.92rem;
+    transition: filter 0.15s ease, box-shadow 0.15s ease;
 }
 
 .popup-btn-action {
-    background-color: #4f46e5;
     color: white;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.2s;
-    flex: 1;
+    background: var(--color-brand);
+    box-shadow: 0 4px 14px -4px color-mix(in oklch, var(--color-brand) 50%, transparent);
 }
 
-.popup-btn-action:hover {
-    background-color: #4338ca;
+.popup-btn-action:hover:not(:disabled) {
+    background: var(--color-brand-dark);
+}
+
+.popup-btn-action:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 .popup-btn-close {
-    background-color: #9ca3af;
-    color: white;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.2s;
-    flex: 1;
+    color: var(--color-ink);
+    background-color: oklch(from var(--color-brand) 0.96 0.006 h);
 }
 
 .popup-btn-close:hover {
-    background-color: #6b7280;
+    background-color: oklch(from var(--color-brand) 0.92 0.008 h);
 }
 
-/* ===== Responsive Breakpoints ===== */
-
-/* Large Tablets & Small Laptops */
+/* ===== Responsive ===== */
 @media screen and (max-width: 1024px) {
-    .locker-wrapper {
-        width: 55%;
-    }
-
-    .door-label {
-        font-size: clamp(6px, 1.5vw, 9px);
-        left: 5%;
-        right: 5%;
-    }
-
-    .popup-content {
-        width: 360px;
+    .cabinet-column {
+        --door-w: 90px;
+        --door-h: 104px;
     }
 }
 
-/* Tablets & Mobile Landscape */
 @media screen and (max-width: 768px) {
-    .locker-wrapper {
-        width: 75%;
-        height: 80vh;
+    .locker-scene {
+        padding: 4rem 0.5rem 1.5rem;
     }
 
-    .door-label {
-        font-size: clamp(5px, 2.5vw, 8px);
-        left: 4%;
-        right: 4%;
+    .locker-stage {
+        gap: 6px;
     }
 
-    .locker-id {
-        font-size: clamp(7px, 2.5vw, 11px);
+    .cabinet-nav {
+        width: 44px;
+        height: 44px;
+        font-size: 22px;
     }
 
-    .popup-content {
-        width: 90%;
-        max-width: 340px;
-        padding: 20px;
+    .cabinet-column {
+        --door-w: 76px;
+        --door-h: 90px;
+        --gap: 7px;
+        --pad: 10px;
+        --frame: 10px;
+        --labels-w: 70px;
     }
 
-    .popup-content h2 {
-        font-size: 1.1rem;
-        margin-bottom: 16px;
+    .cabinet-title {
+        font-size: 0.95rem;
     }
 
-    .locker-details {
-        font-size: 0.85rem;
-        padding: 10px;
-    }
-
-    .locker-details strong {
-        width: 85px;
-        font-size: 0.8rem;
-    }
-
-    .popup-btn-action,
-    .popup-btn-close {
-        padding: 9px 14px;
-        font-size: 0.85rem;
+    .size-labels span {
+        font-size: 0.62rem;
     }
 }
 
-/* Standard Mobile Phones */
 @media screen and (max-width: 480px) {
     .locker-scene {
-        padding: 8px 4px;
         min-height: 100dvh;
+        padding: 3.5rem 0.25rem 1rem;
     }
 
-    .locker-wrapper {
-        width: 92%;
-        height: 78vh;
-        min-height: 420px;
+    .cabinet-column {
+        --door-w: 64px;
+        --door-h: 78px;
+        --gap: 5px;
+        --labels-w: 56px;
     }
 
-    .inline-locker {
-        gap: 3%;
-        padding: 3%;
-    }
-
-    .door-label {
-        font-size: clamp(5px, 3vw, 7px);
-        left: 3%;
-        right: 3%;
-        height: 22%;
-        top: 12%;
-        letter-spacing: 0;
-    }
-
-    .locker-id {
-        font-size: clamp(6px, 3vw, 10px);
-    }
-
-    .locker-id-container {
-        gap: 1px;
-    }
-
-    .door-locker::after {
-        height: 7%;
-        bottom: 14%;
-        left: 20%;
-        right: 20%;
-    }
-
-    .popup-content {
-        width: 92%;
-        padding: 18px;
-    }
-
-    .popup-buttons {
-        gap: 8px;
-    }
-
-    .popup-btn-action,
-    .popup-btn-close {
-        padding: 10px 12px;
-        font-size: 0.8rem;
-        border-radius: 8px;
-    }
-}
-
-/* Very Small Phones (< 360px) */
-@media screen and (max-width: 360px) {
-    .locker-wrapper {
-        width: 98%;
-        height: 75vh;
-        min-height: 380px;
-    }
-
-    .inline-locker {
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: repeat(6, 1fr);
-        gap: 3%;
+    .front-half-label {
+        font-size: 0.7rem;
+        padding: 4px 10px;
     }
 
     .door-label {
-        font-size: 6px;
+        font-size: 0.52rem;
+    }
+
+    .door-id {
+        font-size: 0.58rem;
+    }
+
+    .size-labels span {
+        font-size: 0.56rem;
+    }
+
+    .locker-legend {
+        gap: 5px 10px;
+        font-size: 0.68rem;
+        padding: 7px 12px;
+    }
+
+    .locker-legend span {
+        font-size: 0.68rem;
     }
 }
