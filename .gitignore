@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Node
+node_modules/
+dist/
+
+# Secrets — real values only; the .example files are committed
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Design source assets: 2.4 MB of screenshots and a .rar that nothing in the
+# app imports. Kept on disk, out of git — see Lock/ in the working tree.
+Lock/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json

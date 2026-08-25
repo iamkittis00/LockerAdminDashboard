@@ -84,6 +84,28 @@ describe("api client requests", () => {
         expect(window.location.href).toBe("");
     });
 
+    it("does NOT clear the session on a 400 from an authenticated request (regression: wrong current password used to force-logout)", async () => {
+        // สถานการณ์จริงที่เคยพัง: PUT /api/admin/password คืน 400 เมื่อพิมพ์รหัสผ่านปัจจุบันผิด
+        // แต่ backend เคยตอบ 401 ทำให้โดน handleUnauthorized() เตะออกจากระบบทันที
+        // ทั้งที่ token ยังใช้ได้อยู่ดี — ตอนนี้ backend ตอบ 400 แล้ว ต้องไม่โดนเตะออก
+        sessionStorage.setItem("token", "still-valid-token");
+        sessionStorage.setItem("username", "admin");
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 400,
+            json: async () => ({ detail: "รหัสผ่านปัจจุบันไม่ถูกต้อง" }),
+        });
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { apiPut, ApiError } = await import("./client");
+        await expect(apiPut("/admin/password", { current_password: "wrong", new_password: "newpass123" }))
+            .rejects.toThrow("รหัสผ่านปัจจุบันไม่ถูกต้อง");
+
+        expect(sessionStorage.getItem("token")).toBe("still-valid-token");
+        expect(sessionStorage.getItem("username")).toBe("admin");
+        expect(window.location.href).toBe("");
+    });
+
     it("throws ApiError with the parsed message on non-2xx", async () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: false,

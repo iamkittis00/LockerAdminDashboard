@@ -59,6 +59,7 @@ function DashboardPage() {
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [mustChangePassword, setMustChangePassword] = useState(false);
     const [passwordData, setPasswordData] = useState({ current_password: '', new_password: '', confirm_password: '' });
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
 
     // Prevent body scrolling when a modal is open
     useEffect(() => {
@@ -128,19 +129,23 @@ function DashboardPage() {
 
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
+        if (isChangingPassword) return;
         if (passwordData.new_password !== passwordData.confirm_password) {
             toast.error('รหัสผ่านที่ยืนยันใหม่ ไม่ตรงกันครับ');
             return;
         }
+        setIsChangingPassword(true);
         try {
             await changePassword(passwordData.current_password, passwordData.new_password);
             toast.success('เปลี่ยนรหัสผ่านสำเร็จ! กรุณาล็อกอินใหม่');
             sessionStorage.removeItem('token');
+            sessionStorage.removeItem('username');
             sessionStorage.removeItem('mustChangePassword');
             setTimeout(() => navigate('/'), 1000);
         } catch (error) {
             console.error('Error changing password:', error);
             toast.error(error.message || 'เกิดข้อผิดพลาด');
+            setIsChangingPassword(false);
         }
     };
 
@@ -309,9 +314,11 @@ function DashboardPage() {
                         )}
                         <form onSubmit={handlePasswordSubmit} className={`space-y-4 ${mustChangePassword ? '' : 'mt-4'}`}>
                             <input type="password" placeholder="รหัสผ่านปัจจุบัน" value={passwordData.current_password} onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 outline-none focus:border-brand focus:ring-4 focus:ring-brand/10" required />
-                            <input type="password" placeholder="รหัสผ่านใหม่" value={passwordData.new_password} onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 outline-none focus:border-brand focus:ring-4 focus:ring-brand/10" required />
+                            <input type="password" placeholder="รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)" value={passwordData.new_password} onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 outline-none focus:border-brand focus:ring-4 focus:ring-brand/10" minLength={8} required />
                             <input type="password" placeholder="ยืนยันรหัสผ่านใหม่" value={passwordData.confirm_password} onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 outline-none focus:border-brand focus:ring-4 focus:ring-brand/10" required />
-                            <button type="submit" className="w-full bg-brand hover:bg-brand-dark text-white font-semibold py-2.5 rounded-lg shadow-sm mt-2 transition-colors">ยืนยันการตั้งรหัสผ่านใหม่</button>
+                            <button type="submit" disabled={isChangingPassword} className="w-full bg-brand hover:bg-brand-dark text-white font-semibold py-2.5 rounded-lg shadow-sm mt-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                                {isChangingPassword ? 'กำลังบันทึก...' : 'ยืนยันการตั้งรหัสผ่านใหม่'}
+                            </button>
                         </form>
                     </div>
                 </div>
