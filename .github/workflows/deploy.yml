@@ -84,23 +84,43 @@ jobs:
           python -m pip install --quiet -r requirements-dev.txt
           python -m pytest -q
 
+      # ตัด CR ทิ้งก่อนใช้เสมอ — secret ที่ตั้งจากเครื่อง Windows (PowerShell pipe
+      # หรือวางในหน้าเว็บ) จะมี CRLF ติดมา แล้วพังแบบอ่านสาเหตุไม่ออก:
+      # ssh-keyscan ตายทันทีเพราะชื่อโฮสต์มี CR ต่อท้าย ส่วน key จะโดน ssh
+      # ปฏิเสธว่า invalid format ตอน rsync
       - name: Set up SSH
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p "$SSH_PORT" "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null || {
+            echo "::error::SERVER_SSH_KEY ใช้ไม่ได้ — รูปแบบ key ผิด หรือใส่ .pub มาแทน private key"
+            exit 1
+          }
+          ssh-keyscan -p "$SSH_PORT" "$SERVER_HOST" >> ~/.ssh/known_hosts || {
+            echo "::error::ต่อ $SERVER_HOST:$SSH_PORT ไม่ได้ — เช็ค SERVER_HOST, SSH_PORT และ firewall"
+            exit 1
+          }
 
       - name: Upload frontend build
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
           rsync -avz \
             -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
             frontend/dist/ \
-            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:$REMOTE_FRONTEND_DIR/"
+            "$SERVER_USER@$SERVER_HOST:$REMOTE_FRONTEND_DIR/"
 
       # No --delete anywhere, and .env is excluded deliberately: production
       # secrets live only on the server. venv/__pycache__ are machine-specific.
       - name: Upload backend source
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
           rsync -avz \
             --exclude='.env' \
@@ -109,12 +129,15 @@ jobs:
             --exclude='*.pyc' \
             -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
             backend/ \
-            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:$REMOTE_BACKEND_DIR/"
+            "$SERVER_USER@$SERVER_HOST:$REMOTE_BACKEND_DIR/"
 
       - name: Install deps, restart service, health check
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" \
-            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" bash -s <<EOF
+            "$SERVER_USER@$SERVER_HOST" bash -s <<EOF
             set -euo pipefail
             "$REMOTE_VENV/bin/pip" install --quiet -r "$REMOTE_BACKEND_DIR/requirements.txt"
             sudo systemctl restart "$SERVICE_NAME"
