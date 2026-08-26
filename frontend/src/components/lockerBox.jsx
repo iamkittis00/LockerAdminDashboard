@@ -1,5 +1,5 @@
 import "./lockerBox.css";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from 'react-hot-toast';
 import {
@@ -64,6 +64,20 @@ function LockerBox({ stationId = null }) {
         const interval = setInterval(statusLocker, 30000);
         return () => clearInterval(interval);
     }, [navigate, statusLocker]);
+
+    // ปัดซ้าย-ขวาบนมือถือเพื่อสลับฝั่ง (เกิน 48px ถึงนับ กันมือลั่นตอนจิ้มประตู)
+    const touchStartX = useRef(null);
+    const handleTouchStart = (e) => {
+        touchStartX.current = e.touches[0].clientX;
+    };
+    const handleTouchEnd = (e) => {
+        if (touchStartX.current === null || showPopup) return;
+        const dx = e.changedTouches[0].clientX - touchStartX.current;
+        touchStartX.current = null;
+        if (Math.abs(dx) < 48) return;
+        if (dx < 0) goRight();
+        else goLeft();
+    };
 
     // สลับตู้ด้วยปุ่มลูกศรคีย์บอร์ด
     useEffect(() => {
@@ -138,7 +152,8 @@ function LockerBox({ stationId = null }) {
 
     return (
         <div className="locker-scene">
-            <Toaster position="top-center" />
+            {/* เลื่อนลงพ้นปุ่ม "กลับหน้าแดชบอร์ด" ที่ fixed มุมบนซ้าย — จอแคบเคยทับกัน */}
+            <Toaster position="top-center" containerStyle={{ top: 72 }} />
 
             <div className="locker-stage">
                 <button
@@ -165,7 +180,7 @@ function LockerBox({ stationId = null }) {
                         </div>
                     </div>
 
-                    <div className="cabinet-scroll">
+                    <div className="cabinet-scroll" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
                       <div className="cabinet-viewport">
                         <div key={view} className={`view-panel view-panel-${direction}`}>
                             {view === "front" ? (

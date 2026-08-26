@@ -74,7 +74,7 @@ function CeoStationPage() {
                         <span className="text-slate-300">/</span>
                         <span className="font-semibold text-slate-900 truncate">{stationLabel}</span>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex flex-wrap gap-1">
                         <button
                             onClick={() => setIsHistoryOpen(true)}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-colors"

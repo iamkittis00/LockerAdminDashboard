@@ -33,7 +33,7 @@ function DashboardPage() {
                         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">จัดการล็อกเกอร์</h1>
                         <p className="text-sm text-slate-500 mt-1">เปิด-ปิดตู้ และตรวจสอบสถานะการใช้งาน</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <button
                             onClick={() => setIsHistoryOpen(true)}
                             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-colors"

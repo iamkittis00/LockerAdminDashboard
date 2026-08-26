@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import LockerBox from "./lockerBox";
@@ -140,6 +140,54 @@ describe("LockerBox", () => {
 
         expect(unlockLocker).toHaveBeenCalledTimes(1);
         resolveUnlock({ status: "success" });
+    });
+});
+
+// มือถือไม่มีคีย์บอร์ด — ต้องปัดซ้าย-ขวาเพื่อสลับฝั่งได้
+describe("LockerBox — ปัดจอบนมือถือ", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        sessionStorage.setItem("token", "tok-1");
+        fetchLockers.mockResolvedValue(makeLockers());
+    });
+
+    function swipe(el, fromX, toX) {
+        fireEvent.touchStart(el, { touches: [{ clientX: fromX }] });
+        fireEvent.touchEnd(el, { changedTouches: [{ clientX: toX }] });
+    }
+
+    function surface() {
+        return document.querySelector(".cabinet-scroll");
+    }
+
+    it("ปัดไปทางซ้าย = ไปฝั่งขวา", async () => {
+        renderLockerBox();
+        await screen.findByText("ด้านหน้า");
+        swipe(surface(), 300, 80);
+        expect(await screen.findByText("ตู้ขวา")).toBeInTheDocument();
+    });
+
+    it("ปัดไปทางขวา = ไปฝั่งซ้าย", async () => {
+        renderLockerBox();
+        await screen.findByText("ด้านหน้า");
+        swipe(surface(), 80, 300);
+        expect(await screen.findByText("ตู้ซ้าย")).toBeInTheDocument();
+    });
+
+    it("ขยับนิดเดียว (ตั้งใจจิ้มประตู) ต้องไม่สลับฝั่ง", async () => {
+        renderLockerBox();
+        await screen.findByText("ด้านหน้า");
+        swipe(surface(), 200, 180);
+        expect(screen.getByText("ด้านหน้า")).toBeInTheDocument();
+    });
+
+    it("สุดทางแล้วปัดต่อ ไม่พัง ไม่วนกลับ", async () => {
+        const user = userEvent.setup();
+        renderLockerBox();
+        await screen.findByText("ด้านหน้า");
+        await goRight(user);                       // -> ตู้ขวา (สุดทาง)
+        swipe(surface(), 300, 80);
+        expect(screen.getByText("ตู้ขวา")).toBeInTheDocument();
     });
 });
 

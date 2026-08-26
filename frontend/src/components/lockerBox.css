@@ -603,7 +603,7 @@
     }
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (min-width: 641px) and (max-width: 768px) {
     .locker-scene {
         padding: 4rem 0.5rem 1.5rem;
     }
@@ -636,17 +636,49 @@
     }
 }
 
-@media screen and (max-width: 480px) {
+/* ===== มือถือ (<=640px) — ตู้ต้องพอดีจอเสมอ ไม่ตัดขอบ ไม่มี scroll แนวนอน =====
+   ขนาดช่องเลิกใช้ค่าคงที่ เปลี่ยนเป็นคำนวณย้อนจากความกว้างจอจริง:
+   เอาพื้นที่ที่เหลือ (จอ - ป้ายขนาด - กรอบ - ช่องว่าง) หาร 6 คอลัมน์
+   และย้ายปุ่มลูกศรจากข้างตู้ (ที่เคยลอยทับตู้) ลงมาไว้ใต้ตู้เป็นปุ่มกดใหญ่ๆ แทน */
+@media screen and (max-width: 640px) {
     .locker-scene {
         min-height: 100dvh;
-        padding: 3.5rem 0.25rem 1rem;
+        padding: 4.25rem 0.75rem 1.25rem;
     }
 
     .cabinet-column {
-        --door-w: 64px;
-        --door-h: 78px;
-        --gap: 5px;
-        --labels-w: 56px;
+        --gap: 4px;
+        --pad: 8px;
+        --frame: 8px;
+        --labels-w: 42px;
+        /* 1.5rem = padding ซ้าย+ขวาของ .locker-scene / 12px = gap ใน .cabinet-frame */
+        --avail: calc(100vw - 1.5rem);
+        --door-w: calc((var(--avail) - var(--labels-w) - 12px - 2 * var(--pad) - 2 * var(--frame) - 5 * var(--gap)) / 6);
+        --door-h: calc(var(--door-w) * 1.22);
+    }
+
+    /* ปุ่มลูกศรย้ายลงใต้ตู้ — ใหญ่พอสำหรับนิ้ว และไม่บังตัวตู้อีกต่อไป */
+    .locker-stage {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .cabinet-column {
+        order: 1;
+        width: 100%;
+    }
+
+    .cabinet-nav {
+        order: 2;
+        width: 72px;
+        height: 44px;
+        border-radius: 12px;
+        font-size: 22px;
+    }
+
+    .front-body {
+        width: min(100%, 380px);
     }
 
     .front-half-label {
@@ -666,9 +698,12 @@
         font-size: 0.56rem;
     }
 
+    .nav-hint {
+        display: none; /* บนมือถือปุ่มอยู่ตรงหน้าแล้ว ไม่ต้องบอกเรื่องปุ่มลูกศร */
+    }
+
     .locker-legend {
         gap: 5px 10px;
-        font-size: 0.68rem;
         padding: 7px 12px;
     }
 
