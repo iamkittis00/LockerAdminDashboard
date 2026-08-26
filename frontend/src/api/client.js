@@ -5,8 +5,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // เผื่อกรณีอ่าน exp จาก token ไม่ได้ — ต้องไม่ยาวกว่าที่ backend ตั้งไว้ (24 ชม.)
 export const SESSION_MAX_MS = 24 * 60 * 60 * 1000;
 
-// ปลายทางตอนถูกเตะออก ใส่เหตุผลไปด้วยเพื่อให้หน้า login อธิบายได้ว่าทำไม
-export const EXPIRED_REDIRECT = "/?reason=expired";
+// ปลายทางตอนถูกเตะออก — กลับหน้า login เฉยๆ ไม่ต้องบอกเหตุผล
+export const EXPIRED_REDIRECT = "/";
 
 // ตัวเฝ้าอายุ session ติดตั้งตอนแอปเปิด ซึ่งตอนนั้นยังไม่มีใครล็อกอิน
 // จึงต้องมีสัญญาณบอกให้มันตั้งนาฬิกาใหม่เมื่อ session เปลี่ยน

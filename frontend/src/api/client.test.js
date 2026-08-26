@@ -71,7 +71,7 @@ describe("api client requests", () => {
 
         expect(sessionStorage.getItem("token")).toBeNull();
         expect(sessionStorage.getItem("username")).toBeNull();
-        expect(window.location.href).toBe("/?reason=expired");
+        expect(window.location.href).toBe("/");
     });
 
     it("does not redirect on 401 for unauthenticated requests (e.g. login)", async () => {
