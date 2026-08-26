@@ -1,6 +1,10 @@
 // HTTP client กลาง — คุม base URL, auth header, และอายุ session ที่เดียว
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// default เป็น same-origin — nginx บนเครื่องเดียวกัน proxy /api/ ไป 127.0.0.1:8885 อยู่แล้ว
+// สำคัญ: frontend/.env ถูก gitignore ไว้ ตอน build ใน CI จึงไม่มีค่านี้
+// ถ้าไม่มี fallback จะได้ fetch("undefined/login") -> nginx เสิร์ฟ index.html เป็น static
+// -> POST ใส่ static file = 405 โดยที่ deploy ขึ้นเขียวปกติ
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 // เผื่อกรณีอ่าน exp จาก token ไม่ได้ — ต้องไม่ยาวกว่าที่ backend ตั้งไว้ (24 ชม.)
 export const SESSION_MAX_MS = 24 * 60 * 60 * 1000;
