@@ -240,6 +240,7 @@
     font-size: 0.8rem;
     font-weight: 700;
     color: var(--color-ink-strong);
+    white-space: nowrap; /* "ตู้ซ้าย" เคยตกเป็น 2 บรรทัดบนจอแคบ */
 }
 
 .nav-hint {
@@ -682,8 +683,8 @@
     }
 
     .front-half-label {
-        font-size: 0.7rem;
-        padding: 4px 10px;
+        font-size: 0.6rem;
+        padding: 3px 8px;
     }
 
     .door-label {
