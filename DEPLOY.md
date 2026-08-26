@@ -53,10 +53,10 @@ Copy-Item deploy-secrets.example.json deploy-secrets.local.json   # ครั้
 | `SERVICE_NAME` | `locker-api.service` | `systemctl list-units \| grep locker` |
 | `HEALTHCHECK_URL` | `http://127.0.0.1:8885/api/ping` | ตรงกับ `API_PORT` ใน `.env` บนเซิร์ฟเวอร์ |
 
-> **ค้างอยู่ (2026-08-26)** — `ExecStart` ของ unit override เป็น `--host 0.0.0.0` และ ufw เปิด `8885/tcp`
-> ออกอินเทอร์เน็ต แปลว่า API เข้าถึงได้ตรงๆ ข้าม nginx/HTTPS ขัดกับมาตรฐานที่ตั้งไว้
-> แก้ด้วยการเปลี่ยน `ExecStart` เป็น `--host 127.0.0.1` แล้ว `ufw delete allow 8885/tcp`
-> (ต้องทำบนเซิร์ฟเวอร์ ไม่ใช่ผ่าน pipeline — pipeline ไม่แตะ unit file)
+> **แก้แล้ว (2026-08-26)** — เดิม `ExecStart` เป็น `--host 0.0.0.0` และ ufw เปิด `8885/tcp`
+> ออกอินเทอร์เน็ต (API เข้าตรงได้ ข้าม nginx/HTTPS) ตอนนี้ unit ใช้ `--host 127.0.0.1`
+> และลบ rule ufw แล้ว มีไฟล์สำรอง unit เดิมไว้ที่ `/etc/systemd/system/locker-api.service.bak-*`
+> ถ้าย้ายเครื่อง/ตั้ง service ใหม่ อย่าลืมคงสองอย่างนี้ไว้
 
 ### 3. sudo ต้องไม่ถามรหัส
 ขั้นตอน restart ใช้ `sudo systemctl restart` ผ่าน SSH แบบไม่มี TTY ถ้า sudo ถามรหัสผ่าน job จะค้างแล้ว fail
