@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 import bcrypt
 import mysql.connector
 import os
+import re
 import paho.mqtt.client as mqtt
 import time
 import threading
@@ -404,6 +405,17 @@ class PasswordChange(BaseModel):
     # บังคับความยาวขั้นต่ำที่ฝั่ง server ด้วย ไม่ใช่เชื่อ validation ฝั่งหน้าเว็บอย่างเดียว
     new_password: str = Field(min_length=8, max_length=128)
 
+# bcrypt รับได้สูงสุด 72 ไบต์ (เวอร์ชัน 5 ขึ้นไป raise ValueError เลย ไม่ตัดเงียบ)
+# ภาษาไทยตัวละ 3 ไบต์ — รหัสไทยแค่ ~25 ตัวก็ชนเพดานแล้ว ถ้าไม่เช็คก่อนจะกลายเป็น 500
+BCRYPT_MAX_BYTES = 72
+
+def assert_password_hashable(password: str) -> None:
+    if len(password.encode("utf-8")) > BCRYPT_MAX_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"รหัสผ่านยาวเกินไป (เกิน {BCRYPT_MAX_BYTES} ไบต์ — ตัวอักษรไทยกินที่ 3 ไบต์ต่อตัว) กรุณาตั้งให้สั้นลง",
+        )
+
 class StaffCreate(BaseModel):
     username: str = Field(min_length=3, max_length=50)
     fullname: str = Field(min_length=1, max_length=150)
@@ -541,6 +553,8 @@ def change_admin_password(data: PasswordChange, user: dict = Depends(get_current
 
         if not user_record:
             raise HTTPException(status_code=404, detail="ไม่พบบัญชีผู้ใช้")
+
+        assert_password_hashable(data.new_password)
 
         if not verify_password(data.current_password, user_record["password"]):
             # ใช้ 400 ไม่ใช่ 401 — 401 หมายถึง "token เสีย" ในมุมมอง frontend
@@ -845,6 +859,13 @@ def create_staff(data: StaffCreate, user: dict = Depends(require_ceo)):
         raise HTTPException(status_code=400, detail="ไม่พบสาขาที่ระบุ")
 
     username = data.username.strip().lower()
+    # กฎเดียวกับ scripts/set_user_role.py — กันช่องว่าง/อักขระพิเศษ/ไทย
+    # ปนเข้ามาเป็นชื่อล็อกอิน (พิมพ์ตามไม่ได้ และทำให้เดา username จาก log ยากขึ้นเปล่าๆ)
+    if not re.fullmatch(r"[a-z0-9._-]{3,50}", username):
+        raise HTTPException(
+            status_code=400,
+            detail="ชื่อผู้ใช้ต้องเป็น a-z, 0-9, จุด, ขีดล่าง หรือขีดกลาง ยาว 3-50 ตัว",
+        )
     plain_password = generate_password()
 
     conn = get_db_connection()

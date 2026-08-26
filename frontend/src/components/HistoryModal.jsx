@@ -4,6 +4,14 @@ import { fetchTransactions } from '../api/transactions';
 
 const PAGE_SIZE = 100;
 
+// "2026-08-25 16:45:48" (MySQL) มีช่องว่างคั่น ซึ่ง Safari/iOS parse ไม่ได้ (Invalid Date)
+// ต้องแปลงเป็น ISO ก่อนเสมอ — จุดอื่นในโปรเจคทำแบบนี้อยู่แล้ว
+function formatTimestamp(value) {
+    if (!value) return '-';
+    const d = new Date(value.replace ? value.replace(' ', 'T') : value);
+    return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString('th-TH');
+}
+
 // ตู้ฝั่ง kiosk เขียน deposit/withdraw ส่วนหน้าเว็บเขียน UNLOCK — รองรับทั้งสองแบบ
 const ACTION_LABELS = {
     deposit: { text: 'ฝากของ', className: 'bg-brand-tint text-brand' },
@@ -75,7 +83,7 @@ function HistoryModal({ stationId = null, onClose }) {
                             <tbody className="divide-y divide-slate-100">
                                 {rows.map((row) => (
                                     <tr key={row.trans_id}>
-                                        <td className="p-3 sm:p-4 text-[10px] sm:text-xs text-slate-500">{new Date(row.timestamp).toLocaleString('th-TH')}</td>
+                                        <td className="p-3 sm:p-4 text-[10px] sm:text-xs text-slate-500">{formatTimestamp(row.timestamp)}</td>
                                         <td className="p-3 sm:p-4 text-xs sm:text-sm text-slate-600">{row.station_name || `สาขา ${row.station_id}`}</td>
                                         <td className="p-3 sm:p-4 font-bold text-center text-sm">{row.locker_id}</td>
                                         <td className="p-3 sm:p-4 text-xs sm:text-sm">{row.phone || '-'}</td>

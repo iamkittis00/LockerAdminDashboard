@@ -314,6 +314,46 @@ def test_เปลี่ยนรหัสผ่านผิด_ต้องเ�
     assert r.status_code == 400
 
 
+def test_รหัสผ่านไทยยาวๆ_ต้องได้_400_ไม่ใช่_500(client, db):
+    """bcrypt 5.0 raise ValueError เมื่อเกิน 72 ไบต์ — ไทย 25 ตัว = 75 ไบต์
+    ถ้าไม่เช็คก่อน ผู้ใช้จะเจอ 500 โดยไม่รู้ว่าตั้งรหัสแบบไหนถึงจะผ่าน"""
+    r = client.put("/api/admin/password", headers=auth(db, "admin1"), json={
+        "current_password": ADMIN_PASSWORD, "new_password": "ก" * 25,
+    })
+    assert r.status_code == 400
+    assert "ไบต์" in r.json()["detail"]
+    # รหัสเดิมยังใช้ได้ ไม่ถูกแตะ
+    assert client.post("/api/login",
+                       json={"username": "admin1", "password": ADMIN_PASSWORD}).status_code == 200
+
+
+def test_รหัสผ่านไทยที่ไม่เกิน_72_ไบต์ตั้งได้ปกติ(client, db):
+    r = client.put("/api/admin/password", headers=auth(db, "admin1"), json={
+        "current_password": ADMIN_PASSWORD, "new_password": "รหัสลับ-๑๒๓",   # 8+ ตัว แต่ < 72 ไบต์
+    })
+    assert r.status_code == 200
+
+
+@pytest.mark.parametrize("bad_username", [
+    "มีภาษาไทย", "has space", "UPPER CASE!", "semi;colon", "a" * 51, "ab",
+])
+def test_ชื่อผู้ใช้พนักงานที่ไม่ตรงกฎถูกปฏิเสธ(client, db, bad_username):
+    r = client.post("/api/staff", headers=auth(db, "superadmin"), json={
+        "username": bad_username, "fullname": "ทดสอบ",
+        "phone": "0800000009", "station_id": 1,
+    })
+    assert r.status_code in (400, 422), bad_username
+    assert db.find_user(username=bad_username.strip().lower()) is None
+
+
+def test_ชื่อผู้ใช้ที่ถูกกฎยังสร้างได้(client, db):
+    r = client.post("/api/staff", headers=auth(db, "superadmin"), json={
+        "username": "front.desk_01", "fullname": "พนักงานหน้าเคาน์เตอร์",
+        "phone": "0800000010", "station_id": 1,
+    })
+    assert r.status_code == 200
+
+
 def test_รหัสผ่านใหม่สั้นเกินไปถูกปฏิเสธที่ฝั่ง_server(client, db):
     r = client.put("/api/admin/password", headers=auth(db, "admin1"), json={
         "current_password": ADMIN_PASSWORD, "new_password": "sh0rt",
