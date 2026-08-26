@@ -23,6 +23,12 @@ describe("extractErrorMessage", () => {
     });
 });
 
+// session ที่ใช้ได้จริงต้องมีวันหมดอายุด้วย ไม่งั้นถือว่าหมดอายุ (fail closed)
+function setSession(token, msFromNow = 60 * 60 * 1000) {
+    sessionStorage.setItem("token", token);
+    sessionStorage.setItem("expiresAt", String(Date.now() + msFromNow));
+}
+
 describe("api client requests", () => {
     const ORIGINAL_LOCATION = window.location;
 
@@ -39,7 +45,7 @@ describe("api client requests", () => {
     });
 
     it("attaches the Authorization header from sessionStorage", async () => {
-        sessionStorage.setItem("token", "abc123");
+        setSession("abc123");
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
@@ -55,7 +61,7 @@ describe("api client requests", () => {
     });
 
     it("clears the session and redirects to / on 401", async () => {
-        sessionStorage.setItem("token", "expired-token");
+        setSession("expired-token");
         sessionStorage.setItem("username", "admin");
         const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({}) });
         vi.stubGlobal("fetch", fetchMock);
@@ -65,7 +71,7 @@ describe("api client requests", () => {
 
         expect(sessionStorage.getItem("token")).toBeNull();
         expect(sessionStorage.getItem("username")).toBeNull();
-        expect(window.location.href).toBe("/");
+        expect(window.location.href).toBe("/?reason=expired");
     });
 
     it("does not redirect on 401 for unauthenticated requests (e.g. login)", async () => {
@@ -76,7 +82,7 @@ describe("api client requests", () => {
         });
         vi.stubGlobal("fetch", fetchMock);
 
-        const { apiPost, ApiError } = await import("./client");
+        const { apiPost } = await import("./client");
         await expect(apiPost("/login", { username: "a", password: "b" }, { auth: false }))
             .rejects.toThrow("wrong password");
 
@@ -88,7 +94,7 @@ describe("api client requests", () => {
         // สถานการณ์จริงที่เคยพัง: PUT /api/admin/password คืน 400 เมื่อพิมพ์รหัสผ่านปัจจุบันผิด
         // แต่ backend เคยตอบ 401 ทำให้โดน handleUnauthorized() เตะออกจากระบบทันที
         // ทั้งที่ token ยังใช้ได้อยู่ดี — ตอนนี้ backend ตอบ 400 แล้ว ต้องไม่โดนเตะออก
-        sessionStorage.setItem("token", "still-valid-token");
+        setSession("still-valid-token");
         sessionStorage.setItem("username", "admin");
         const fetchMock = vi.fn().mockResolvedValue({
             ok: false,
@@ -97,7 +103,7 @@ describe("api client requests", () => {
         });
         vi.stubGlobal("fetch", fetchMock);
 
-        const { apiPut, ApiError } = await import("./client");
+        const { apiPut } = await import("./client");
         await expect(apiPut("/admin/password", { current_password: "wrong", new_password: "newpass123" }))
             .rejects.toThrow("รหัสผ่านปัจจุบันไม่ถูกต้อง");
 

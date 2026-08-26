@@ -1,4 +1,4 @@
-import { apiPost, apiPut } from "./client";
+import { apiGet, apiPost, apiPut } from "./client";
 
 // login ไม่ผูก token เดิม (ยังไม่มี) และไม่ต้องการให้ 401 สั่ง redirect
 export const login = (username, password) =>
@@ -6,3 +6,6 @@ export const login = (username, password) =>
 
 export const changePassword = (currentPassword, newPassword) =>
     apiPut("/admin/password", { current_password: currentPassword, new_password: newPassword });
+
+// ถามสิทธิ์ตัวเองจาก server ไม่เชื่อค่าใน sessionStorage
+export const fetchMe = () => apiGet("/me");

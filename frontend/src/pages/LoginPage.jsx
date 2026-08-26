@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowRight, Eye, EyeOff, Clock } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { login } from '../api/auth';
+import { saveSession } from '../api/client';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const wasExpired = searchParams.get('reason') === 'expired';
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -21,10 +24,10 @@ function LoginPage() {
     try {
       const result = await login(formData.username, formData.password);
       toast.success('เข้าสู่ระบบสำเร็จ');
-      sessionStorage.setItem('token', result.access_token);
-      sessionStorage.setItem('username', result.username);
-      sessionStorage.setItem('mustChangePassword', result.must_change_password ? '1' : '0');
-      setTimeout(() => navigate('/dashboard'), 600);
+      saveSession(result);
+      // ceo เริ่มที่หน้าเลือกสาขา ส่วน admin เข้าสาขาตัวเองเลย
+      const home = result.role === 'ceo' ? '/ceo' : '/dashboard';
+      setTimeout(() => navigate(home), 600);
     } catch (error) {
       console.error('Login error:', error);
       toast.error(error.message || 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
@@ -35,6 +38,7 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden bg-canvas">
+      <Toaster position="top-right" />
 
       <div className="w-full max-w-sm">
         {/* Wordmark — เลิกใช้วงกลมไอคอนกลางจอ ใช้ lockup แนวนอนแทน */}
@@ -51,6 +55,16 @@ function LoginPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_16px_40px_-16px_rgba(0,50,104,0.25)] p-7 sm:p-8">
           <h1 className="text-xl font-bold text-slate-900 mb-1">เข้าสู่ระบบ</h1>
           <p className="text-sm text-slate-500 mb-6">กรอกบัญชีพนักงานเพื่อจัดการระบบล็อกเกอร์</p>
+
+          {wasExpired && (
+            <div className="flex items-start gap-2 px-3.5 py-3 mb-5 rounded-lg bg-amber-50 border border-amber-200">
+              <Clock size={15} className="text-amber-700 shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-800 leading-snug">
+                <p className="font-semibold">เซสชันหมดอายุแล้ว</p>
+                <p className="text-amber-700">ระบบให้เข้าใช้งานต่อเนื่องได้ครั้งละ 24 ชั่วโมง กรุณาเข้าสู่ระบบอีกครั้ง</p>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>

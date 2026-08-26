@@ -1,5 +1,6 @@
 # Python
 __pycache__/
+.pytest_cache/
 *.py[cod]
 venv/
 .venv/
@@ -24,3 +25,7 @@ Lock/
 Thumbs.db
 .vscode/*
 !.vscode/extensions.json
+
+# local tooling state — ไม่ใช่โค้ดโปรเจค
+.claude/
+CLAUDE.md

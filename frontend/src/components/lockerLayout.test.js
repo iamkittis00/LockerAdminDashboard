@@ -3,6 +3,7 @@ import {
     TOTAL_LOCKERS,
     getLockerPosition,
     getDoorState,
+    isScreenSlot,
     formatDateTime,
 } from "./lockerLayout";
 
@@ -110,5 +111,25 @@ describe("formatDateTime", () => {
         const result = formatDateTime("2026-08-22 10:00:00");
         expect(result).not.toBe("-");
         expect(result).not.toBe("2026-08-22 10:00:00");
+    });
+});
+
+describe("isScreenSlot", () => {
+    it("เป็นช่องจอเมื่อ is_usable = 0 เท่านั้น", () => {
+        expect(isScreenSlot({ is_usable: 0 })).toBe(true);
+        expect(isScreenSlot({ is_usable: "0" })).toBe(true);
+        expect(isScreenSlot({ is_usable: 1 })).toBe(false);
+    });
+
+    it("NULL/undefined ถือเป็นตู้ปกติ ให้ตรงกับ backend", () => {
+        // ถ้ามองผิดเป็นช่องจอ backend จะเคลียร์ข้อมูลให้แต่หน้าเว็บบอกว่าไม่ใช่ตู้ฝากของ
+        expect(isScreenSlot({ is_usable: null })).toBe(false);
+        expect(isScreenSlot({})).toBe(false);
+        expect(isScreenSlot(null)).toBe(false);
+    });
+
+    it("ตู้ที่ is_usable เป็น NULL ต้องแสดงสถานะตามการใช้งานจริง ไม่ใช่ช่องจอ", () => {
+        expect(getDoorState({ is_usable: null, status: 0 }).className).toBe("door-free");
+        expect(getDoorState({ is_usable: null, status: 1, is_overdue: false }).className).toBe("door-used");
     });
 });

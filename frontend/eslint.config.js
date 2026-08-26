@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import react from 'eslint-plugin-react'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
@@ -22,8 +23,18 @@ export default defineConfig([
         sourceType: 'module',
       },
     },
+    plugins: { react },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // ให้ eslint รู้ว่า component ที่ใช้ใน JSX (<Foo />) ถือว่าถูกใช้แล้ว
+      // ไม่งั้น no-unused-vars จะฟ้อง import ของ component ทุกตัวเป็น false positive
+      'react/jsx-uses-vars': 'error',
+      // ยกเว้นเฉพาะที่ขึ้นต้นด้วย _ (กรณีที่จำนวน argument ถูกบังคับโดยโครงสร้าง)
+      // ไม่ยกเว้นตัวพิมพ์ใหญ่ทั้งหมดแบบ template เดิม ไม่งั้น constant ที่ไม่ได้ใช้จะหลุดรอด
+      'no-unused-vars': ['error', {
+        varsIgnorePattern: '^_',
+        argsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
     },
   },
 ])

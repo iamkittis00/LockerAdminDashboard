@@ -6,7 +6,9 @@ import {
     CABINETS,
     ROW_LABELS,
     getLockerPosition,
+    getLockerSlot,
     getDoorState,
+    isScreenSlot,
     formatDateTime,
 } from "./lockerLayout";
 import { fetchLockers, fetchLockerDetail, unlockLocker as apiUnlockLocker } from "../api/lockers";
@@ -14,7 +16,7 @@ import { fetchLockers, fetchLockerDetail, unlockLocker as apiUnlockLocker } from
 // ลำดับการเลื่อนดู: ซ้าย <- หน้า -> ขวา — เข้าหน้านี้ครั้งแรกเจอ "หน้า" ก่อนเสมอ
 const VIEWS = ["left", "front", "right"];
 
-function LockerBox() {
+function LockerBox({ stationId = null }) {
     const navigate = useNavigate();
 
     const [lockerData, setLockerData] = useState([]);
@@ -46,12 +48,12 @@ function LockerBox() {
 
     const statusLocker = useCallback(async () => {
         try {
-            const data = await fetchLockers();
+            const data = await fetchLockers(stationId);
             setLockerData(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error fetching locker status:", error);
         }
-    }, []);
+    }, [stationId]);
 
     useEffect(() => {
         if (!sessionStorage.getItem("token")) {
@@ -79,7 +81,11 @@ function LockerBox() {
             !cabinet
                 ? []
                 : lockerData
-                    .map((locker) => ({ locker, pos: getLockerPosition(locker.locker_id) }))
+                    .map((locker) => ({
+                        locker,
+                        slot: getLockerSlot(locker),
+                        pos: getLockerPosition(getLockerSlot(locker)),
+                    }))
                     .filter((item) => item.pos && item.pos.cabinet === cabinet.key),
         [lockerData, cabinet]
     );
@@ -90,15 +96,16 @@ function LockerBox() {
 
         setIsUnlocking(true);
         const lockerId = lockerInfo.locker_id;
+        const slot = getLockerSlot(lockerInfo);
 
         try {
-            await apiUnlockLocker(lockerId);
+            await apiUnlockLocker(lockerId, stationId);
             closePopup();
-            toast.success(`🔓 สั่งเปิดตู้ ${lockerId} สำเร็จ`);
+            toast.success(`สั่งเปิดตู้ ${slot} สำเร็จ`);
             setTimeout(statusLocker, 1500);
         } catch (error) {
             console.error("Error unlocking locker:", error);
-            toast.error(error.message || `❌ สั่งเปิดตู้ ${lockerId} ไม่สำเร็จ`);
+            toast.error(error.message || `สั่งเปิดตู้ ${slot} ไม่สำเร็จ`);
         } finally {
             setIsUnlocking(false);
         }
@@ -110,7 +117,7 @@ function LockerBox() {
         setShowPopup(true);
         setSelectedLocker(null);
         try {
-            const data = await fetchLockerDetail(locker.locker_id);
+            const data = await fetchLockerDetail(locker.locker_id, stationId);
             setSelectedLocker(Array.isArray(data) && data.length > 0 ? data[0] : null);
         } catch (error) {
             console.error("Error fetching locker detail:", error);
@@ -127,7 +134,7 @@ function LockerBox() {
     };
 
     const detail = selectedLocker || currentLocker;
-    const isScreenSlot = detail && Number(detail.is_usable) === 0;
+    const showScreenSlotNote = detail && isScreenSlot(detail);
 
     return (
         <div className="locker-scene">
@@ -190,7 +197,7 @@ function LockerBox() {
                                     <div className="locker-wrapper">
                                         <div className="locker-body">
                                             <div className="inline-locker">
-                                                {cabinetLockers.map(({ locker, pos }) => {
+                                                {cabinetLockers.map(({ locker, slot, pos }) => {
                                                     const state = getDoorState(locker);
                                                     return (
                                                         <button
@@ -199,12 +206,12 @@ function LockerBox() {
                                                             className={`door-locker ${state.className}`}
                                                             style={{ gridRow: pos.row + 1, gridColumn: pos.col + 1 }}
                                                             onClick={() => handleLockerClick(locker)}
-                                                            aria-label={`ตู้ ${locker.locker_id} (${locker.size || "-"}) — ${state.label}`}
-                                                            title={`ตู้ ${locker.locker_id} (${locker.size || "-"}) — ${state.label}`}
+                                                            aria-label={`ตู้ ${slot} (${locker.size || "-"}) — ${state.label}`}
+                                                            title={`ตู้ ${slot} (${locker.size || "-"}) — ${state.label}`}
                                                         >
                                                             <span className="door-label">{state.label}</span>
                                                             <span className="door-handle" />
-                                                            <span className="door-id">{locker.locker_id}</span>
+                                                            <span className="door-id">{slot}</span>
                                                         </button>
                                                     );
                                                 })}
@@ -250,14 +257,14 @@ function LockerBox() {
                             <p className="popup-loading">กำลังโหลด...</p>
                         ) : detail ? (
                             <>
-                                {isScreenSlot && (
+                                {showScreenSlotNote && (
                                     <div className="popup-note">
                                         <strong>หมายเหตุ:</strong> ช่องนี้ถูกล็อคไว้สำหรับติดตั้งจอ
                                         ไม่ใช้รับฝากของ เปิดได้เฉพาะตอนเข้าไปดูแลอุปกรณ์
                                     </div>
                                 )}
                                 <div className="locker-details">
-                                    <p><strong>หมายเลขตู้</strong> {detail.locker_id}</p>
+                                    <p><strong>หมายเลขตู้</strong> {getLockerSlot(detail)}</p>
                                     <p><strong>ขนาด</strong> {detail.size || "-"}</p>
                                     <p><strong>เบอร์ผู้ฝาก</strong> {detail.phone_owner || "-"}</p>
                                     <p><strong>ห้อง</strong> {detail.room_number || "-"}</p>

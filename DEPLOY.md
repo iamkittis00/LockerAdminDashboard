@@ -70,7 +70,7 @@ Copy-Item deploy-secrets.example.json deploy-secrets.local.json   # ครั้
 ## หลัง deploy ต้องเช็ค
 
 1. `API_HOST` ใน `.env` บนเซิร์ฟเวอร์เป็น `127.0.0.1`
-   (ค่า default ในโค้ดคือ `0.0.0.0` — ถ้า `.env` ไม่ได้ตั้ง API จะเปิดออกเน็ตตรงๆ ข้าม nginx/HTTPS)
+   (ค่า default ในโค้ดเป็น `127.0.0.1` แล้ว แต่ตั้งใน `.env` ให้ชัดไว้ดีกว่า)
    และ systemd unit ต้องไม่ override ด้วย `--host 0.0.0.0`
 2. `ALLOWED_ORIGINS` = `https://locker-admin.donaus-dev.net`
 3. **ถ้า deploy รอบนั้นแตะระบบ auth: ทุกคนต้อง login ใหม่** — token เก่าไม่มี `ver` claim จึงถูก revoke ทั้งหมด
