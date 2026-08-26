@@ -57,11 +57,14 @@ def test_flow_พนักงานเปิดตู้ให้ลูกค้
     body = json.loads(payload)
     assert body == {"box_number": 2, "staff_id": 1, "staff_name": "แอดมินสาขา 1"}
 
-    # 6) ตู้กลับเป็นว่าง และข้อมูลลูกค้าถูกล้าง
+    # 6) ตู้กลับเป็นว่าง และข้อมูลลูกค้าถูกล้างครบทุกช่อง — ห้อง/เวลาฝากต้องไม่ค้าง
+    # ให้คนต่อไปเห็น (เคยเคลียร์ไม่ครบมาแล้ว)
     after = db.find_locker(2)
     assert after["status"] == 0
     assert after["phone_owner"] is None
     assert after["pass_code"] is None
+    assert after["room_number"] is None
+    assert after["deposit_time"] is None
 
     # 7) ประวัติบันทึกว่าใครเปิด ตู้ไหน สาขาไหน
     history = client.get("/api/transactions", headers=headers).json()["data"]
@@ -70,6 +73,8 @@ def test_flow_พนักงานเปิดตู้ให้ลูกค้
     assert history[0]["locker_id"] == 2          # เลขช่อง ไม่ใช่ locker_id
     assert history[0]["staff_name"] == "แอดมินสาขา 1"
     assert history[0]["station_name"] == "โรงแรม 1"
+    # ห้องถูกบันทึกลงประวัติ "ก่อน" เคลียร์ตู้ — ตู้ว่างแล้วแต่ประวัติต้องไม่หาย
+    assert history[0]["room_number"] == "101"
 
 
 def test_flow_เลขช่องในประวัติเป็น_box_number_ไม่ใช่_locker_id(client, db):

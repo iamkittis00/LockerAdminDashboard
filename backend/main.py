@@ -766,9 +766,12 @@ def unlock_hardware_and_release(locker_id: int, station_id: Optional[int] = None
             # ช่องจอ: บันทึกประวัติอย่างเดียว ไม่แตะข้อมูลผู้ใช้
             detail = 'ส่งคำสั่งเปิดช่องติดตั้งจอ (ไม่ลบข้อมูล)'
         else:
-            # ตู้ปกติ: เคลียร์ค่าผู้ใช้งานคืนเป็นตู้ว่าง
+            # ตู้ปกติ: เคลียร์ข้อมูลผู้ฝาก "ทุกช่อง" คืนเป็นตู้ว่างพร้อมรับคนต่อไป
+            # (ห้อง/เวลาฝากต้องหายด้วย — เคยเคลียร์ไม่ครบแล้วค่าเก่าค้างให้คนต่อไปเห็น
+            # ส่วนประวัติไม่หาย เพราะบันทึกลง transactions ไว้ก่อนแล้วข้างล่าง)
             cursor.execute("""UPDATE lockers
-                              SET phone_owner=NULL, pass_code=NULL, status=0, updated_at=NOW()
+                              SET phone_owner=NULL, pass_code=NULL, room_number=NULL,
+                                  deposit_time=NULL, status=0, updated_at=NOW()
                               WHERE locker_id=%s AND station_id=%s""",
                            (locker_id, station_id))
             detail = 'ส่งคำสั่ง MQTT เปิดตู้และคืนค่าว่างสำเร็จ'

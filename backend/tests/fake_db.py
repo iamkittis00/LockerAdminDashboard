@@ -275,7 +275,8 @@ class FakeCursor:
         if q.startswith("UPDATE lockers"):
             l = self.db.find_locker(p[0], p[1])
             if l:
-                l.update(phone_owner=None, pass_code=None, status=0, updated_at="now")
+                l.update(phone_owner=None, pass_code=None, room_number=None,
+                         deposit_time=None, status=0, updated_at="now")
             return
 
         # ---------- transactions ----------
