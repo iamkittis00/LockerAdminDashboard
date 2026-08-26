@@ -376,7 +376,7 @@ def test_ดึงประวัติทีละมากๆ_ถูกจำ�
         db.transactions.append({
             "transaction_id": i + 1, "created_at": "2026-08-26 10:00:00",
             "station_id": 1, "box_number": 1, "phone": None, "room_number": None,
-            "staff_id": 1, "action": "UNLOCK", "detail": "-",
+            "staff_id": 1, "action": "web_unlock", "detail": "-",
         })
     r = client.get("/api/transactions?limit=99999999&offset=-5", headers=auth(db, "admin1"))
     assert r.status_code == 200

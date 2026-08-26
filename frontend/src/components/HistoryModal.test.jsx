@@ -26,7 +26,7 @@ const ROWS = [
         locker_id: 4,
         phone: "0863841265",
         staff_name: "สมชาย ใจดี",
-        action: "UNLOCK",
+        action: "web_unlock",
         detail: "ส่งคำสั่ง MQTT เปิดตู้",
     },
 ];
@@ -70,7 +70,7 @@ describe("HistoryModal", () => {
         expect(within(row).getByText("ระบบ/ตู้")).toBeInTheDocument();
     });
 
-    it("แปลง action เป็นภาษาไทย รองรับทั้งตัวพิมพ์เล็กจากตู้และตัวพิมพ์ใหญ่จากหน้าเว็บ", async () => {
+    it("แปลง action เป็นภาษาไทยตามค่า enum จริงของตาราง", async () => {
         render(<HistoryModal stationId="1" onClose={() => {}} />);
         expect(await screen.findByText("ฝากของ")).toBeInTheDocument();
         expect(screen.getByText("แอดมินสั่งเปิด")).toBeInTheDocument();

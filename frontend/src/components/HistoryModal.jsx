@@ -12,12 +12,15 @@ function formatTimestamp(value) {
     return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString('th-TH');
 }
 
-// ตู้ฝั่ง kiosk เขียน deposit/withdraw ส่วนหน้าเว็บเขียน UNLOCK — รองรับทั้งสองแบบ
+// ค่าจริงในคอลัมน์ action เป็น ENUM('deposit','withdraw','web_unlock','admin_clear')
+// (คีย์เก่า unlock/assign/delete คงไว้เผื่อข้อมูลเก่า ไม่มีผลเสีย)
 const ACTION_LABELS = {
     deposit: { text: 'ฝากของ', className: 'bg-brand-tint text-brand' },
     assign: { text: 'ฝากของ', className: 'bg-brand-tint text-brand' },
     withdraw: { text: 'รับของคืน', className: 'bg-emerald-100 text-emerald-700' },
+    web_unlock: { text: 'แอดมินสั่งเปิด', className: 'bg-amber-100 text-amber-800' },
     unlock: { text: 'แอดมินสั่งเปิด', className: 'bg-amber-100 text-amber-800' },
+    admin_clear: { text: 'ล้างข้อมูลตู้', className: 'bg-slate-200 text-slate-600' },
     delete: { text: 'ลบข้อมูล', className: 'bg-slate-200 text-slate-600' },
 };
 

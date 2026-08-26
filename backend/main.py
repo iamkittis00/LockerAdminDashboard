@@ -138,6 +138,10 @@ ROLE_ADMIN = "admin"
 ROLE_CEO = "ceo"
 ALLOWED_ROLES = (ROLE_ADMIN, ROLE_CEO)
 
+# transactions.action เป็น ENUM('deposit','withdraw','web_unlock','admin_clear')
+# ห้ามเขียนค่านอกลิสต์ — MySQL โยน Data truncated (เคยพังจริงเพราะเขียน 'UNLOCK')
+ACTION_WEB_UNLOCK = "web_unlock"
+
 def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -771,7 +775,7 @@ def unlock_hardware_and_release(locker_id: int, station_id: Optional[int] = None
 
         cursor.execute(sql_trans, (
             station_id, box_number, phone_owner, locker.get("room_number"),
-            user["user_id"], 'UNLOCK', detail,
+            user["user_id"], ACTION_WEB_UNLOCK, detail,
         ))
         conn.commit()
     except Exception as e:

@@ -66,7 +66,7 @@ def test_flow_พนักงานเปิดตู้ให้ลูกค้
     # 7) ประวัติบันทึกว่าใครเปิด ตู้ไหน สาขาไหน
     history = client.get("/api/transactions", headers=headers).json()["data"]
     assert len(history) == 1
-    assert history[0]["action"] == "UNLOCK"
+    assert history[0]["action"] == "web_unlock"
     assert history[0]["locker_id"] == 2          # เลขช่อง ไม่ใช่ locker_id
     assert history[0]["staff_name"] == "แอดมินสาขา 1"
     assert history[0]["station_name"] == "โรงแรม 1"
