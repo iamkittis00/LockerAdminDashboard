@@ -40,17 +40,23 @@ Copy-Item deploy-secrets.example.json deploy-secrets.local.json   # ครั้
 > ณ 2026-08-25 repo นี้ยังไม่มี secret สักตัว (`gh secret list` ว่าง)
 > GitHub อ่านค่า secret กลับออกมาไม่ได้ ต้องใช้ private key ฉบับที่เก็บไว้ในเครื่อง
 
-### 2. ค่าที่ต้องแก้ให้ตรงเซิร์ฟเวอร์
-อยู่ในบล็อก `env:` หัวไฟล์ workflow — **ค่าตอนนี้เป็นค่าเดา ต้องยืนยันก่อนรันจริง**
+### 2. ค่าที่ต้องตรงกับเซิร์ฟเวอร์
+อยู่ในบล็อก `env:` หัวไฟล์ workflow — **ยืนยันกับเครื่องจริงแล้วเมื่อ 2026-08-26**
+(ค่าชุดเดิมเป็นค่าเดาและผิดทุกตัว ถ้า deploy ไปจะสร้างโฟลเดอร์ใหม่ที่ไม่มีใครใช้ แล้ว job เขียวโดยเว็บไม่เปลี่ยน)
 
-| ตัวแปร | ค่าที่ใส่ไว้ | ยืนยันด้วย (SSH เข้าเซิร์ฟเวอร์) |
+| ตัวแปร | ค่าจริง | ยืนยันด้วย (SSH เข้าเซิร์ฟเวอร์) |
 |---|---|---|
 | `SSH_PORT` | `222` | พอร์ตเดียวกับ pms-donaus |
-| `REMOTE_FRONTEND_DIR` | `/var/www/locker-admin/dist` | `grep -r root /etc/nginx/sites-enabled/` |
-| `REMOTE_BACKEND_DIR` | `/opt/locker-admin/backend` | `systemctl cat locker-api.service \| grep WorkingDirectory` |
-| `REMOTE_VENV` | `/opt/locker-admin/venv` | `systemctl cat locker-api.service \| grep ExecStart` |
+| `REMOTE_FRONTEND_DIR` | `/var/www/lockerV1/dist` | `grep -rn "root " /etc/nginx/sites-enabled/ \| grep -i locker` |
+| `REMOTE_BACKEND_DIR` | `/var/www/lockerV1/backend` | `systemctl cat locker-api.service \| grep WorkingDirectory` |
+| `REMOTE_VENV` | `/var/www/lockerV1/backend/venv` | `systemctl cat locker-api.service \| grep ExecStart` |
 | `SERVICE_NAME` | `locker-api.service` | `systemctl list-units \| grep locker` |
 | `HEALTHCHECK_URL` | `http://127.0.0.1:8885/api/ping` | ตรงกับ `API_PORT` ใน `.env` บนเซิร์ฟเวอร์ |
+
+> **ค้างอยู่ (2026-08-26)** — `ExecStart` ของ unit override เป็น `--host 0.0.0.0` และ ufw เปิด `8885/tcp`
+> ออกอินเทอร์เน็ต แปลว่า API เข้าถึงได้ตรงๆ ข้าม nginx/HTTPS ขัดกับมาตรฐานที่ตั้งไว้
+> แก้ด้วยการเปลี่ยน `ExecStart` เป็น `--host 127.0.0.1` แล้ว `ufw delete allow 8885/tcp`
+> (ต้องทำบนเซิร์ฟเวอร์ ไม่ใช่ผ่าน pipeline — pipeline ไม่แตะ unit file)
 
 ### 3. sudo ต้องไม่ถามรหัส
 ขั้นตอน restart ใช้ `sudo systemctl restart` ผ่าน SSH แบบไม่มี TTY ถ้า sudo ถามรหัสผ่าน job จะค้างแล้ว fail

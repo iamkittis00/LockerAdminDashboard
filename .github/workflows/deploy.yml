@@ -12,9 +12,9 @@ on:
 env:
   # --- Fill these in to match the server (see DEPLOY.md) -------------------
   SSH_PORT: '222'
-  REMOTE_FRONTEND_DIR: /var/www/locker-admin/dist
-  REMOTE_BACKEND_DIR: /opt/locker-admin/backend
-  REMOTE_VENV: /opt/locker-admin/venv
+  REMOTE_FRONTEND_DIR: /var/www/lockerV1/dist
+  REMOTE_BACKEND_DIR: /var/www/lockerV1/backend
+  REMOTE_VENV: /var/www/lockerV1/backend/venv
   SERVICE_NAME: locker-api.service
   HEALTHCHECK_URL: http://127.0.0.1:8885/api/ping
   # ------------------------------------------------------------------------
