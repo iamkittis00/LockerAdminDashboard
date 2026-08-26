@@ -70,33 +70,35 @@ function HistoryModal({ stationId = null, onClose }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 p-0 sm:p-4">
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[100vw] sm:max-w-4xl overflow-hidden flex flex-col h-[90dvh] sm:max-h-[80dvh]">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[100vw] sm:max-w-5xl overflow-hidden flex flex-col h-[90dvh] sm:max-h-[80dvh]">
                 <div className="flex justify-between items-center p-4 sm:p-6 border-b border-slate-100 shrink-0">
                     <h2 className="text-base sm:text-xl font-bold text-slate-900">ประวัติการใช้งานล็อกเกอร์</h2>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-600 shrink-0"><X size={22} /></button>
                 </div>
                 <div className="p-3 sm:p-6 overflow-y-auto flex-1 bg-slate-50">
-                    <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto max-w-[calc(100vw-24px)] sm:max-w-full">
-                        <table className="w-full text-left border-collapse whitespace-nowrap min-w-[600px]">
+                    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                        {/* ไม่บังคับความกว้างขั้นต่ำแล้ว — ช่องสั้นๆ ห้ามตกบรรทัด
+                            ส่วนรายละเอียดปล่อยให้ตัดบรรทัดแทนการดัน scroll แนวนอน */}
+                        <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs sm:text-sm">
+                                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs sm:text-sm whitespace-nowrap">
                                     <th className="p-3 sm:p-4">เวลา</th><th className="p-3 sm:p-4">สาขา</th><th className="p-3 sm:p-4">ตู้</th><th className="p-3 sm:p-4">เบอร์โทร</th><th className="p-3 sm:p-4">ผู้ทำรายการ</th><th className="p-3 sm:p-4">การกระทำ</th><th className="p-3 sm:p-4">รายละเอียด</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {rows.map((row) => (
                                     <tr key={row.trans_id}>
-                                        <td className="p-3 sm:p-4 text-[10px] sm:text-xs text-slate-500">{formatTimestamp(row.timestamp)}</td>
+                                        <td className="p-3 sm:p-4 text-[10px] sm:text-xs text-slate-500 whitespace-nowrap">{formatTimestamp(row.timestamp)}</td>
                                         <td className="p-3 sm:p-4 text-xs sm:text-sm text-slate-600">{row.station_name || `สาขา ${row.station_id}`}</td>
-                                        <td className="p-3 sm:p-4 font-bold text-center text-sm">{row.locker_id}</td>
-                                        <td className="p-3 sm:p-4 text-xs sm:text-sm">{row.phone || '-'}</td>
+                                        <td className="p-3 sm:p-4 font-bold text-center text-sm whitespace-nowrap">{row.locker_id}</td>
+                                        <td className="p-3 sm:p-4 text-xs sm:text-sm tabular-nums whitespace-nowrap">{row.phone || '-'}</td>
                                         <td className="p-3 sm:p-4 text-xs sm:text-sm">{row.staff_name || <span className="text-slate-400">ระบบ/ตู้</span>}</td>
                                         <td className="p-3 sm:p-4">
-                                            <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-bold ${actionBadge(row.action).className}`}>
+                                            <span className={`inline-flex whitespace-nowrap px-2 py-0.5 rounded text-[11px] font-bold ${actionBadge(row.action).className}`}>
                                                 {actionBadge(row.action).text}
                                             </span>
                                         </td>
-                                        <td className="p-3 sm:p-4 text-[10px] sm:text-xs text-slate-400">{row.detail}</td>
+                                        <td className="p-3 sm:p-4 text-[10px] sm:text-xs text-slate-400 break-words">{row.detail}</td>
                                     </tr>
                                 ))}
                             </tbody>
