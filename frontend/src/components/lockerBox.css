@@ -64,7 +64,7 @@
 .cabinet-column {
     /* ตัวแปรขนาดช่องประกาศไว้ตรงนี้ที่เดียว — .cabinet-frame กับตัวล็อคความกว้างด้านล่างใช้ร่วมกัน */
     --door-w: 104px;
-    --door-h: 120px;
+    --door-h: 106px; /* ฐานของแถว S — M/L คูณจากตัวนี้ ลดจาก 120 ไม่ให้ความสูงรวมล้นจอ */
     --gap: 10px;
     --pad: 14px;
     --frame: 15px;
@@ -79,8 +79,11 @@
 /* ขนาดตัวตู้เต็มที่ (locker-body / front-body ต้องสูงเท่ากันเป๊ะ) — ใช้ล็อคพื้นที่ตรงกลาง
    ไม่ให้ปุ่มลูกศรขยับ และไม่ให้หน้าเว็บกระโดดขึ้นลงตอนสลับมุมมอง "ด้านหน้า" */
 .cabinet-column {
+    /* ช่องสูงตามขนาดจริง: S = ฐาน, M = +20%, L = +40% (แถวบน->ล่าง) */
+    --door-h-m: calc(var(--door-h) * 1.2);
+    --door-h-l: calc(var(--door-h) * 1.4);
     --content-w: calc(6 * var(--door-w) + 5 * var(--gap) + 2 * var(--pad) + 2 * var(--frame) + var(--labels-w));
-    --content-h: calc(3 * var(--door-h) + 2 * var(--gap) + 2 * var(--pad) + 2 * var(--frame));
+    --content-h: calc(var(--door-h) + var(--door-h-m) + var(--door-h-l) + 2 * var(--gap) + 2 * var(--pad) + 2 * var(--frame));
 }
 
 .cabinet-header {
@@ -252,7 +255,7 @@
 
 .size-labels {
     display: grid;
-    grid-template-rows: repeat(3, var(--door-h));
+    grid-template-rows: var(--door-h) var(--door-h-m) var(--door-h-l);
     row-gap: var(--gap);
     padding-top: calc(var(--frame) + var(--pad));
     flex: 0 0 auto;
@@ -295,7 +298,7 @@
     border-radius: 2px;
     display: grid;
     grid-template-columns: repeat(6, var(--door-w));
-    grid-template-rows: repeat(3, var(--door-h));
+    grid-template-rows: var(--door-h) var(--door-h-m) var(--door-h-l);
     gap: var(--gap);
     padding: var(--pad);
     box-sizing: border-box;
