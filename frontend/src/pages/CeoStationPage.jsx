@@ -1,18 +1,102 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
-import { ArrowLeft, Box, Users, Clock, Settings as SettingsIcon, LogOut } from 'lucide-react';
-import { Toaster } from 'react-hot-toast';
+import { ArrowLeft, Box, Users, Clock, Settings as SettingsIcon, LogOut, Pencil, X } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 import LockerOverview from '../components/LockerOverview';
 import StaffManagementPanel from '../components/StaffManagementPanel';
 import HistoryModal from '../components/HistoryModal';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { clearSession } from '../api/client';
-import { fetchStations } from '../api/stations';
+import { fetchStations, updateStation } from '../api/stations';
 
 const TABS = [
     { key: 'lockers', label: 'ตู้ล็อกเกอร์', icon: Box },
     { key: 'staff', label: 'พนักงาน', icon: Users },
 ];
+
+// แก้ชื่อ/ที่ตั้งสาขา — ชื่อนี้โชว์ทุกหน้า (หน้าเลือกสาขา, แผงพนักงาน, ประวัติ)
+function RenameStationModal({ station, stationId, onClose, onSaved }) {
+    const [form, setForm] = useState({
+        station_name: station?.station_name || '',
+        location: station?.location || '',
+    });
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (isSaving) return;
+        setIsSaving(true);
+        try {
+            await updateStation(stationId, {
+                station_name: form.station_name.trim(),
+                location: form.location.trim() || null,
+            });
+            toast.success('แก้ไขข้อมูลสาขาแล้ว');
+            onSaved();
+            onClose();
+        } catch (error) {
+            console.error('Error updating station:', error);
+            toast.error(error.message || 'แก้ไขข้อมูลสาขาไม่สำเร็จ');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="แก้ไขข้อมูลสาขา"
+                className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6"
+            >
+                <div className="flex justify-between items-center mb-1">
+                    <h3 className="text-lg font-bold text-slate-900">แก้ไขข้อมูลสาขา</h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+                        <X size={20} />
+                    </button>
+                </div>
+                <p className="text-sm text-slate-500 mb-4">
+                    ชื่อนี้จะแสดงกับพนักงานทุกคนและในประวัติทั้งหมดของสาขา
+                </p>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label htmlFor="station-name" className="block text-sm font-medium text-slate-700 mb-1.5">
+                            ชื่อสาขา
+                        </label>
+                        <input
+                            id="station-name"
+                            value={form.station_name}
+                            onChange={(e) => setForm({ ...form, station_name: e.target.value })}
+                            maxLength={100}
+                            required
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 outline-none focus:border-brand focus:ring-4 focus:ring-brand/10"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="station-location" className="block text-sm font-medium text-slate-700 mb-1.5">
+                            ที่ตั้ง (ไม่บังคับ)
+                        </label>
+                        <input
+                            id="station-location"
+                            value={form.location}
+                            onChange={(e) => setForm({ ...form, location: e.target.value })}
+                            maxLength={255}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 outline-none focus:border-brand focus:ring-4 focus:ring-brand/10"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="w-full bg-brand hover:bg-brand-dark text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                        {isSaving ? 'กำลังบันทึก...' : 'บันทึก'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+}
 
 // หน้าสาขาของ CEO — แยกเป็นแท็บ จะได้ไม่ต้องเลื่อนผ่านตารางตู้กว่าจะถึงส่วนพนักงาน
 function CeoStationPage() {
@@ -23,25 +107,42 @@ function CeoStationPage() {
     const [staffCount, setStaffCount] = useState(null);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [isPasswordOpen, setIsPasswordOpen] = useState(false);
+    const [isRenameOpen, setIsRenameOpen] = useState(false);
 
     const activeTab = searchParams.get('tab') === 'staff' ? 'staff' : 'lockers';
+
+    // เรียกซ้ำได้หลังแก้ชื่อสาขา — ตัว effect ใช้โครง IIFE + cancelled ตามแบบแผนของโปรเจค
+    const loadStation = useCallback(async () => {
+        const result = await fetchStations();
+        return (result.data || []).find((s) => String(s.station_id) === String(stationId)) || null;
+    }, [stationId]);
+
+    const applyStation = (found) => {
+        if (!found) return;
+        setStation(found);
+        setStaffCount(Number(found.staff_count) || 0);
+    };
 
     useEffect(() => {
         let cancelled = false;
         (async () => {
             try {
-                const result = await fetchStations();
-                const found = (result.data || []).find((s) => String(s.station_id) === String(stationId));
-                if (!cancelled && found) {
-                    setStation(found);
-                    setStaffCount(Number(found.staff_count) || 0);
-                }
+                const found = await loadStation();
+                if (!cancelled) applyStation(found);
             } catch (error) {
                 console.error('Error fetching station:', error);
             }
         })();
         return () => { cancelled = true; };
-    }, [stationId]);
+    }, [loadStation]);
+
+    const handleStationSaved = async () => {
+        try {
+            applyStation(await loadStation());
+        } catch (error) {
+            console.error('Error refreshing station:', error);
+        }
+    };
 
     // กัน /ceo/abc หรือ /ceo/-1 — ต้องเป็นเลขสาขาที่ใช้ได้จริง
     if (!/^\d+$/.test(stationId || '')) {
@@ -103,6 +204,14 @@ function CeoStationPage() {
                 <div className="mb-5">
                     <div className="flex items-center gap-2.5 flex-wrap">
                         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{stationLabel}</h1>
+                        <button
+                            onClick={() => setIsRenameOpen(true)}
+                            aria-label="แก้ไขข้อมูลสาขา"
+                            title="แก้ไขชื่อ/ที่ตั้งสาขา"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-brand hover:bg-white border border-transparent hover:border-slate-200 transition-colors"
+                        >
+                            <Pencil size={15} />
+                        </button>
                         {isClosed && (
                             <span className="inline-flex px-2 py-1 rounded-md bg-slate-200 text-slate-600 text-xs font-semibold">
                                 ปิดให้บริการ
@@ -163,6 +272,15 @@ function CeoStationPage() {
 
             {isHistoryOpen && (
                 <HistoryModal stationId={stationId} onClose={() => setIsHistoryOpen(false)} />
+            )}
+
+            {isRenameOpen && (
+                <RenameStationModal
+                    station={station}
+                    stationId={stationId}
+                    onClose={() => setIsRenameOpen(false)}
+                    onSaved={handleStationSaved}
+                />
             )}
         </div>
     );

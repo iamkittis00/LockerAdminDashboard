@@ -31,6 +31,8 @@ PROTECTED = [
     ("post", "/api/staff"),
     ("put", "/api/staff/1"),
     ("post", "/api/staff/1/reset-password"),
+    ("delete", "/api/staff/1"),
+    ("put", "/api/stations/1"),
 ]
 
 
@@ -206,6 +208,8 @@ CEO_ONLY = [
                             "phone": "0811111111", "station_id": 1}),
     ("put", "/api/staff/2", {"fullname": "แก้ชื่อ"}),
     ("post", "/api/staff/2/reset-password", None),
+    ("delete", "/api/staff/2", None),
+    ("put", "/api/stations/1", {"station_name": "ชื่อใหม่"}),
 ]
 
 
@@ -233,6 +237,13 @@ def test_ceo_แก้บัญชี_ceo_ด้วยกันไม่ได�
     r = client.put("/api/staff/9", headers=auth(db, "superadmin"), json={"is_active": False})
     assert r.status_code == 403
     assert db.find_user(user_id=9)["is_active"] == 1
+
+
+def test_ceo_ลบบัญชี_ceo_ด้วยกันไม่ได้(client, db):
+    """กันลบตัวเอง/ลบผู้บริหารคนอื่น — บัญชี ceo แตะผ่านเว็บไม่ได้เลย"""
+    r = client.delete("/api/staff/9", headers=auth(db, "superadmin"))
+    assert r.status_code == 403
+    assert db.find_user(user_id=9) is not None
 
 
 def test_ceo_รีเซ็ตรหัสผ่านบัญชี_ceo_ไม่ได้(client, db):

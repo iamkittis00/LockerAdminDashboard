@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import StaffManagementPanel from "./StaffManagementPanel";
-import { fetchStaff, createStaff, updateStaff, resetStaffPassword } from "../api/staff";
+import { fetchStaff, createStaff, deleteStaff, resetStaffPassword } from "../api/staff";
 
 vi.mock("../api/staff", () => ({
     fetchStaff: vi.fn(),
     createStaff: vi.fn(),
-    updateStaff: vi.fn(),
+    deleteStaff: vi.fn(),
     resetStaffPassword: vi.fn(),
 }));
 
@@ -93,29 +93,41 @@ describe("StaffManagementPanel", () => {
         expect(within(row).getByText("20/08 09:14")).toBeInTheDocument();
     });
 
-    it("แถวที่ปิดใช้งาน มีปุ่มเปิดใช้งานอีกครั้ง ไม่มีปุ่มรีเซ็ตรหัส", async () => {
+    it("แถวที่ถูกปิดใช้งานไว้ (ข้อมูลเก่า) เหลือแค่ปุ่มลบ ไม่มีรีเซ็ตรหัส", async () => {
         renderPanel();
         const row = await waitFor(() => rowOf("สมศักดิ์ มั่นคง"));
-        expect(within(row).getByRole("button", { name: "เปิดใช้งานอีกครั้ง" })).toBeInTheDocument();
+        expect(within(row).getByRole("button", { name: /ลบ/ })).toBeInTheDocument();
         expect(within(row).queryByRole("button", { name: /รีเซ็ตรหัส/ })).not.toBeInTheDocument();
     });
 
-    it("กดปิดใช้งาน ส่ง is_active=false", async () => {
+    it("กดลบแล้วต้องยืนยันก่อน — ยังไม่ยิง API จนกว่าจะกดยืนยัน", async () => {
         const user = userEvent.setup();
-        updateStaff.mockResolvedValue({});
+        deleteStaff.mockResolvedValue({});
         renderPanel();
         const row = await waitFor(() => rowOf("สมชาย ใจดี"));
-        await user.click(within(row).getByRole("button", { name: "ปิดใช้งาน" }));
-        await waitFor(() => expect(updateStaff).toHaveBeenCalledWith(11, { is_active: false }));
+
+        await user.click(within(row).getByRole("button", { name: /ลบ/ }));
+        const dialog = await screen.findByRole("dialog", { name: "ยืนยันการลบพนักงาน" });
+        expect(within(dialog).getByText(/ลบพนักงาน สมชาย ใจดี/)).toBeInTheDocument();
+        expect(deleteStaff).not.toHaveBeenCalled();
+
+        await user.click(within(dialog).getByRole("button", { name: "ลบพนักงาน" }));
+        await waitFor(() => expect(deleteStaff).toHaveBeenCalledWith(11));
     });
 
-    it("กดเปิดใช้งานอีกครั้ง ส่ง is_active=true", async () => {
+    it("กดยกเลิกใน modal ยืนยัน ต้องไม่ลบ", async () => {
         const user = userEvent.setup();
-        updateStaff.mockResolvedValue({});
         renderPanel();
-        const row = await waitFor(() => rowOf("สมศักดิ์ มั่นคง"));
-        await user.click(within(row).getByRole("button", { name: "เปิดใช้งานอีกครั้ง" }));
-        await waitFor(() => expect(updateStaff).toHaveBeenCalledWith(13, { is_active: true }));
+        const row = await waitFor(() => rowOf("สมชาย ใจดี"));
+
+        await user.click(within(row).getByRole("button", { name: /ลบ/ }));
+        const dialog = await screen.findByRole("dialog", { name: "ยืนยันการลบพนักงาน" });
+        await user.click(within(dialog).getByRole("button", { name: "ยกเลิก" }));
+
+        await waitFor(() =>
+            expect(screen.queryByRole("dialog", { name: "ยืนยันการลบพนักงาน" })).not.toBeInTheDocument()
+        );
+        expect(deleteStaff).not.toHaveBeenCalled();
     });
 
     it("รีเซ็ตรหัสแล้วโชว์รหัสใหม่พร้อมคำเตือนแสดงครั้งเดียว", async () => {

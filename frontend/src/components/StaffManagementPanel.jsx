@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { UserPlus, KeyRound, X, Users, Building2, Clock, Copy, Check, AlertTriangle } from 'lucide-react';
+import { UserPlus, KeyRound, X, Users, Building2, Clock, Copy, Check, AlertTriangle, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { fetchStaff, createStaff, updateStaff, resetStaffPassword } from '../api/staff';
+import { fetchStaff, createStaff, deleteStaff, resetStaffPassword } from '../api/staff';
 
 // "วันนี้ 09:14" / "12/08 17:22" — ให้อ่านเร็วกว่าวันที่เต็ม
 function formatLastLogin(value) {
@@ -108,6 +108,7 @@ function StaffManagementPanel({ stationId, stationName, onCountChange }) {
     const [isSaving, setIsSaving] = useState(false);
     const [form, setForm] = useState({ username: '', fullname: '', phone: '' });
     const [passwordResult, setPasswordResult] = useState(null);
+    const [confirmDelete, setConfirmDelete] = useState(null);
     const [busyUserId, setBusyUserId] = useState(null);
 
     // เก็บใน ref เพื่อไม่ให้ load() เปลี่ยน identity ทุกครั้งที่ parent re-render
@@ -150,16 +151,19 @@ function StaffManagementPanel({ stationId, stationName, onCountChange }) {
         }
     };
 
-    const handleToggleActive = async (member) => {
-        if (busyUserId) return;
+    // ลบถาวร ไม่มีปิดชั่วคราว — ต้องกดยืนยันใน modal ก่อนเสมอ
+    const handleDelete = async () => {
+        const member = confirmDelete;
+        if (!member || busyUserId) return;
         setBusyUserId(member.user_id);
         try {
-            await updateStaff(member.user_id, { is_active: !member.is_active });
-            toast.success(member.is_active ? 'ปิดการใช้งานบัญชีแล้ว' : 'เปิดการใช้งานบัญชีแล้ว');
+            await deleteStaff(member.user_id);
+            toast.success(`ลบพนักงาน ${member.fullname || member.username} แล้ว`);
+            setConfirmDelete(null);
             load();
         } catch (error) {
-            console.error('Error updating staff:', error);
-            toast.error(error.message || 'แก้ไขไม่สำเร็จ');
+            console.error('Error deleting staff:', error);
+            toast.error(error.message || 'ลบพนักงานไม่สำเร็จ');
         } finally {
             setBusyUserId(null);
         }
@@ -265,33 +269,24 @@ function StaffManagementPanel({ stationId, stationName, onCountChange }) {
                                         </td>
                                         <td className="px-4 sm:px-5 py-3">
                                             <div className="flex items-center justify-end gap-1.5">
-                                                {m.is_active ? (
-                                                    <>
-                                                        <button
-                                                            onClick={() => handleResetPassword(m)}
-                                                            disabled={busyUserId === m.user_id}
-                                                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:border-brand hover:text-brand transition-colors disabled:opacity-50 whitespace-nowrap"
-                                                        >
-                                                            <KeyRound size={13} />
-                                                            รีเซ็ตรหัส
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleToggleActive(m)}
-                                                            disabled={busyUserId === m.user_id}
-                                                            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 whitespace-nowrap"
-                                                        >
-                                                            ปิดใช้งาน
-                                                        </button>
-                                                    </>
-                                                ) : (
+                                                {Boolean(m.is_active) && (
                                                     <button
-                                                        onClick={() => handleToggleActive(m)}
+                                                        onClick={() => handleResetPassword(m)}
                                                         disabled={busyUserId === m.user_id}
-                                                        className="px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-white text-xs font-medium text-emerald-700 hover:bg-emerald-50 transition-colors disabled:opacity-50 whitespace-nowrap"
+                                                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:border-brand hover:text-brand transition-colors disabled:opacity-50 whitespace-nowrap"
                                                     >
-                                                        เปิดใช้งานอีกครั้ง
+                                                        <KeyRound size={13} />
+                                                        รีเซ็ตรหัส
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => setConfirmDelete(m)}
+                                                    disabled={busyUserId === m.user_id}
+                                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 whitespace-nowrap"
+                                                >
+                                                    <Trash2 size={13} />
+                                                    ลบ
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -367,6 +362,50 @@ function StaffManagementPanel({ stationId, stationName, onCountChange }) {
                                 {isSaving ? 'กำลังบันทึก...' : 'เพิ่มพนักงาน'}
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {confirmDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="ยืนยันการลบพนักงาน"
+                        className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-4"
+                    >
+                        <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                                <Trash2 size={17} />
+                            </div>
+                            <div className="min-w-0">
+                                <h3 className="text-lg font-bold text-slate-900 leading-snug">
+                                    ลบพนักงาน {confirmDelete.fullname || confirmDelete.username}?
+                                </h3>
+                                <p className="text-sm text-slate-500 mt-0.5">
+                                    ชื่อผู้ใช้ <span className="font-semibold text-slate-600">{confirmDelete.username}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 leading-relaxed">
+                            บัญชีจะถูกลบถาวรและเข้าสู่ระบบไม่ได้ทันที ถ้าต้องการให้กลับมาใช้อีก
+                            ต้องกด "เพิ่มพนักงาน" สร้างใหม่ — ส่วนประวัติการเปิดตู้ที่เคยทำไว้จะยังอยู่ครบ
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleDelete}
+                                disabled={busyUserId === confirmDelete.user_id}
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-60"
+                            >
+                                {busyUserId === confirmDelete.user_id ? 'กำลังลบ...' : 'ลบพนักงาน'}
+                            </button>
+                            <button
+                                onClick={() => setConfirmDelete(null)}
+                                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-lg transition-colors"
+                            >
+                                ยกเลิก
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

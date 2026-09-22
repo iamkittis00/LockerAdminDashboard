@@ -14,6 +14,7 @@ const ROWS = [
         station_name: "LockerStation 1",
         locker_id: 5,
         phone: "0863841265",
+        staff_id: null,
         staff_name: null,
         action: "deposit",
         detail: "Deposit size L with pass_code",
@@ -62,6 +63,14 @@ describe("HistoryModal", () => {
         render(<HistoryModal stationId="1" onClose={() => {}} />);
         const row = await waitFor(() => rowOf("ส่งคำสั่ง MQTT เปิดตู้"));
         expect(within(row).getByText("สมชาย ใจดี")).toBeInTheDocument();
+    });
+
+    it("รายการของพนักงานที่ถูกลบไปแล้ว ขึ้นว่า พนักงานที่ถูกลบ ไม่ใช่ ระบบ/ตู้", async () => {
+        fetchTransactions.mockResolvedValue({
+            data: [{ ...ROWS[1], staff_name: null, staff_id: 42 }],
+        });
+        render(<HistoryModal stationId="1" onClose={() => {}} />);
+        expect(await screen.findByText("พนักงานที่ถูกลบ")).toBeInTheDocument();
     });
 
     it("รายการที่ไม่มีพนักงาน (ลูกค้าทำเองที่ตู้) ขึ้นว่า ระบบ/ตู้", async () => {

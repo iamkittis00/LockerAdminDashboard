@@ -426,6 +426,11 @@ class StaffCreate(BaseModel):
     phone: str = Field(min_length=1, max_length=20)
     station_id: int
 
+class StationUpdate(BaseModel):
+    # ตรงกับคอลัมน์จริง: station_name varchar(100) NOT NULL, location varchar(255) NULL
+    station_name: str = Field(min_length=1, max_length=100)
+    location: Optional[str] = Field(default=None, max_length=255)
+
 class StaffUpdate(BaseModel):
     fullname: Optional[str] = Field(default=None, max_length=150)
     phone: Optional[str] = Field(default=None, max_length=20)
@@ -517,6 +522,34 @@ def get_stations(user: dict = Depends(get_current_user)):
         st["staff_count"] = int(staff_counts.get(st["station_id"], 0))
 
     return {"status": "success", "data": stations}
+
+@app.put("/api/stations/{station_id}")
+def rename_station(station_id: int, data: StationUpdate, user: dict = Depends(require_ceo)):
+    """เปลี่ยนชื่อ/ที่ตั้งสาขา — ให้เฉพาะผู้บริหาร เพราะชื่อนี้โชว์กับทุกคนทุกหน้า"""
+    if not station_exists(station_id):
+        raise HTTPException(status_code=404, detail="ไม่พบสาขาที่ระบุ")
+
+    name = data.station_name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="ชื่อสาขาห้ามว่าง")
+    location = (data.location or "").strip() or None
+
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "UPDATE stations SET station_name=%s, location=%s WHERE station_id=%s",
+            (name, location, station_id),
+        )
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+    return {"status": "success", "message": "แก้ไขข้อมูลสาขาสำเร็จ",
+            "data": {"station_id": station_id, "station_name": name, "location": location}}
 
 @app.get("/api/settings")
 def get_settings(user: dict = Depends(get_current_user)):
@@ -989,6 +1022,41 @@ def reset_staff_password(user_id: int, user: dict = Depends(require_ceo)):
         "message": "รีเซ็ตรหัสผ่านสำเร็จ",
         "data": {"username": target["username"], "password": plain_password},
     }
+
+@app.delete("/api/staff/{user_id}")
+def delete_staff(user_id: int, user: dict = Depends(require_ceo)):
+    """
+    ลบบัญชีพนักงานถาวร (ต้องการให้กลับมาใช้ = เพิ่มใหม่)
+    - ลบได้เฉพาะ role='admin' — บัญชีผู้บริหารลบผ่านเว็บไม่ได้ กันลบตัวเอง/ลบกันเอง
+    - token ของคนที่ถูกลบตายทันที (get_current_user เช็คกับ DB ทุก request)
+    - ประวัติใน transactions ไม่หาย: ไม่มี FK ผูก staff_id ไว้ แถวเก่ายังเก็บ staff_id เดิม
+      (ยืนยันกับ schema จริงแล้ว 2026-09-22)
+    """
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    cursor = conn.cursor(dictionary=True)
+    try:
+        target = _fetch_staff_row(cursor, user_id)
+        if not target:
+            raise HTTPException(status_code=404, detail="ไม่พบพนักงานคนนี้")
+        if (target.get("role") or "").lower() != ROLE_ADMIN:
+            raise HTTPException(status_code=403, detail="ลบได้เฉพาะบัญชีพนักงานเท่านั้น")
+
+        # ผูก role ไว้ใน WHERE ด้วยอีกชั้น กัน race ตอนมีคนเปลี่ยน role พร้อมกัน
+        cursor.execute("DELETE FROM users WHERE user_id=%s AND role=%s", (user_id, ROLE_ADMIN))
+        conn.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print("delete_staff error:", e)
+        raise HTTPException(status_code=400, detail="ไม่สามารถลบพนักงานได้")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return {"status": "success", "message": f"ลบพนักงาน {target['username']} แล้ว"}
 
 
 if __name__ == "__main__":

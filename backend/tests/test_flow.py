@@ -171,12 +171,18 @@ def test_flow_ผู้บริหารเลือกสาขาแล้ว
     stations = client.get("/api/stations", headers=headers).json()["data"]
     assert next(s for s in stations if s["station_id"] == 1)["staff_count"] == 2
 
-    # 6) ปิดใช้งาน แล้วคนนั้นล็อกอินไม่ได้อีก
-    assert client.put(f"/api/staff/{account['user_id']}", headers=headers,
-                      json={"is_active": False}).status_code == 200
+    # 6) ลบพนักงานออก — บัญชีหายถาวร ล็อกอินไม่ได้ และ token ที่ถืออยู่ตายทันที
+    staff_headers = bearer(new_session["access_token"])
+    assert client.delete(f"/api/staff/{account['user_id']}", headers=headers).status_code == 200
+    assert db.find_user(username="newstaff") is None
     assert client.post("/api/login", json={
         "username": "newstaff", "password": account["password"],
     }).status_code == 401
+    assert client.get("/api/lockers", headers=staff_headers).status_code == 401
+
+    # 7) ยอดพนักงานกลับมาเท่าเดิม
+    stations = client.get("/api/stations", headers=headers).json()["data"]
+    assert next(s for s in stations if s["station_id"] == 1)["staff_count"] == 1
 
 
 def test_flow_รีเซ็ตรหัสผ่านให้พนักงานที่ลืมรหัส(client, db):
@@ -277,3 +283,46 @@ def test_flow_DB_ล่มตั้งแต่แรก_ล็อกอิน�
     assert r.status_code == 500
     assert "Traceback" not in r.text
     assert "main.py" not in r.text
+
+
+def test_flow_เปลี่ยนชื่อสาขาแล้วเห็นผลทุกที่(client, db):
+    headers = auth(db, "superadmin")
+
+    r = client.put("/api/stations/1", headers=headers,
+                   json={"station_name": "โรงแรมริมแม่น้ำ", "location": "เชียงใหม่"})
+    assert r.status_code == 200
+
+    stations = client.get("/api/stations", headers=headers).json()["data"]
+    station1 = next(s for s in stations if s["station_id"] == 1)
+    assert station1["station_name"] == "โรงแรมริมแม่น้ำ"
+    assert station1["location"] == "เชียงใหม่"
+
+    # ประวัติเดิมก็ขึ้นชื่อใหม่ด้วย (join จากตาราง stations เสมอ)
+    client.post("/api/lockers/2/unlock?station_id=1", headers=headers)
+    history = client.get("/api/transactions?station_id=1", headers=headers).json()["data"]
+    assert history[0]["station_name"] == "โรงแรมริมแม่น้ำ"
+
+
+def test_flow_rename_สาขาที่ไม่มีอยู่_ได้_404(client, db):
+    r = client.put("/api/stations/999", headers=auth(db, "superadmin"),
+                   json={"station_name": "อะไรก็ได้"})
+    assert r.status_code == 404
+
+
+def test_flow_ลบพนักงานแล้วประวัติการเปิดตู้ต้องไม่หาย(client, db):
+    """เจตนาของการเก็บ staff_id ใน transactions — ลบคนได้ แต่ลบร่องรอยไม่ได้"""
+    ceo = auth(db, "superadmin")
+
+    # admin1 เปิดตู้ไว้หนึ่งครั้ง
+    assert client.post("/api/lockers/2/unlock", headers=auth(db, "admin1")).status_code == 200
+
+    # ลบ admin1 ทิ้ง
+    assert client.delete("/api/staff/1", headers=ceo).status_code == 200
+    assert db.find_user(username="admin1") is None
+
+    # แถวประวัติยังอยู่ครบ พร้อม staff_id เดิม (ชื่อหายเพราะบัญชีถูกลบ)
+    history = client.get("/api/transactions?station_id=1", headers=ceo).json()["data"]
+    assert len(history) == 1
+    assert history[0]["action"] == "web_unlock"
+    assert history[0]["staff_id"] == 1
+    assert history[0]["staff_name"] is None

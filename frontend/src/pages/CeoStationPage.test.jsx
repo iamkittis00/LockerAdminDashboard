@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import CeoStationPage from "./CeoStationPage";
-import { fetchStations } from "../api/stations";
+import { fetchStations, updateStation } from "../api/stations";
 import { fetchStaff } from "../api/staff";
 import { fetchLockers } from "../api/lockers";
 
-vi.mock("../api/stations", () => ({ fetchStations: vi.fn() }));
+vi.mock("../api/stations", () => ({ fetchStations: vi.fn(), updateStation: vi.fn() }));
 vi.mock("../api/lockers", () => ({ fetchLockers: vi.fn() }));
 vi.mock("../api/transactions", () => ({ fetchTransactions: vi.fn() }));
 vi.mock("../api/auth", () => ({ changePassword: vi.fn() }));
@@ -131,6 +131,31 @@ describe("CeoStationPage", () => {
         await user.click(screen.getByRole("button", { name: /ออกจากระบบ/ }));
         expect(sessionStorage.getItem("token")).toBeNull();
         expect(await screen.findByText("หน้าล็อกอิน")).toBeInTheDocument();
+    });
+
+    it("เปลี่ยนชื่อสาขาแล้วหัวหน้าเพจอัปเดตทันที", async () => {
+        const user = userEvent.setup();
+        updateStation.mockResolvedValue({});
+        renderPage();
+        await screen.findByRole("heading", { name: "โรงแรม 2" });
+
+        await user.click(screen.getByRole("button", { name: "แก้ไขข้อมูลสาขา" }));
+        const dialog = await screen.findByRole("dialog", { name: "แก้ไขข้อมูลสาขา" });
+
+        // ค่าเดิมถูกเติมไว้ให้แก้ต่อ ไม่ต้องพิมพ์ใหม่หมด
+        expect(within(dialog).getByLabelText("ชื่อสาขา")).toHaveValue("โรงแรม 2");
+
+        // หลังบันทึก โหลดข้อมูลใหม่ได้ชื่อที่เปลี่ยนแล้ว
+        fetchStations.mockResolvedValue({ data: [{ ...STATION, station_name: "โรงแรมริมหาด" }] });
+        await user.clear(within(dialog).getByLabelText("ชื่อสาขา"));
+        await user.type(within(dialog).getByLabelText("ชื่อสาขา"), "โรงแรมริมหาด");
+        await user.click(within(dialog).getByRole("button", { name: "บันทึก" }));
+
+        await waitFor(() => expect(updateStation).toHaveBeenCalledWith("2", {
+            station_name: "โรงแรมริมหาด",
+            location: "สีลม",
+        }));
+        expect(await screen.findByRole("heading", { name: "โรงแรมริมหาด" })).toBeInTheDocument();
     });
 
     it("ยังไม่รู้ชื่อสาขา ใช้ 'สาขา {id}' ไปก่อน ไม่โชว์ค่าว่าง", async () => {

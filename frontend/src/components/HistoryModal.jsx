@@ -92,7 +92,10 @@ function HistoryModal({ stationId = null, onClose }) {
                                         <td className="p-3 sm:p-4 text-xs sm:text-sm text-slate-600">{row.station_name || `สาขา ${row.station_id}`}</td>
                                         <td className="p-3 sm:p-4 font-bold text-center text-sm whitespace-nowrap">{row.locker_id}</td>
                                         <td className="p-3 sm:p-4 text-xs sm:text-sm tabular-nums whitespace-nowrap">{row.phone || '-'}</td>
-                                        <td className="p-3 sm:p-4 text-xs sm:text-sm">{row.staff_name || <span className="text-slate-400">ระบบ/ตู้</span>}</td>
+                                        <td className="p-3 sm:p-4 text-xs sm:text-sm">{row.staff_name
+                                            || (row.staff_id
+                                                ? <span className="text-slate-400">พนักงานที่ถูกลบ</span>
+                                                : <span className="text-slate-400">ระบบ/ตู้</span>)}</td>
                                         <td className="p-3 sm:p-4">
                                             <span className={`inline-flex whitespace-nowrap px-2 py-0.5 rounded text-[11px] font-bold ${actionBadge(row.action).className}`}>
                                                 {actionBadge(row.action).text}

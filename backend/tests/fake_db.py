@@ -239,7 +239,17 @@ class FakeCursor:
                     u["must_change_password"] = 1
             return
 
+        if "DELETE FROM users WHERE user_id=%s AND role=%s" in q:
+            self.db.users = [u for u in self.db.users
+                             if not (u["user_id"] == p[0] and u["role"] == p[1])]
+            return
+
         # ---------- stations ----------
+        if q.startswith("UPDATE stations SET station_name=%s, location=%s"):
+            for st in self.db.stations:
+                if st["station_id"] == p[2]:
+                    st["station_name"], st["location"] = p[0], p[1]
+            return
         if "FROM stations WHERE station_id=%s LIMIT 1" in q:
             self._scalar_rows([1] if any(s["station_id"] == p[0] for s in self.db.stations) else [])
             return
