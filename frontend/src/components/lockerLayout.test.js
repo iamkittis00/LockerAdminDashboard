@@ -4,6 +4,7 @@ import {
     getLockerPosition,
     getDoorState,
     isScreenSlot,
+    formatRoom,
     formatDateTime,
 } from "./lockerLayout";
 
@@ -131,5 +132,25 @@ describe("isScreenSlot", () => {
     it("ตู้ที่ is_usable เป็น NULL ต้องแสดงสถานะตามการใช้งานจริง ไม่ใช่ช่องจอ", () => {
         expect(getDoorState({ is_usable: null, status: 0 }).className).toBe("door-free");
         expect(getDoorState({ is_usable: null, status: 1, is_overdue: false }).className).toBe("door-used");
+    });
+});
+
+describe("formatRoom", () => {
+    it("ห้องปกติแสดงตามจริง", () => {
+        expect(formatRoom("101")).toBe("101");
+        expect(formatRoom("2510")).toBe("2510");
+        expect(formatRoom(808)).toBe("808");
+    });
+
+    it("ค่าที่ยาวเกิน 4 ตัว (เช่นเบอร์โทรพิมพ์ผิดช่องจากฝั่งตู้) ถูกตัดเหลือ 4 ตัวแรก", () => {
+        expect(formatRoom("0816339304")).toBe("0816");
+        expect(formatRoom(" 2510A ")).toBe("2510");
+    });
+
+    it("ไม่มีค่า/ว่าง แสดงขีด", () => {
+        expect(formatRoom(null)).toBe("-");
+        expect(formatRoom(undefined)).toBe("-");
+        expect(formatRoom("")).toBe("-");
+        expect(formatRoom("   ")).toBe("-");
     });
 });

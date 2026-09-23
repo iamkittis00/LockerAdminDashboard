@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { fetchTransactions } from '../api/transactions';
+import { formatRoom } from './lockerLayout';
 
 const PAGE_SIZE = 100;
 
@@ -91,7 +92,7 @@ function HistoryModal({ stationId = null, onClose }) {
                                         <td className="p-3 sm:p-4 text-[10px] sm:text-xs text-slate-500 whitespace-nowrap">{formatTimestamp(row.timestamp)}</td>
                                         <td className="p-3 sm:p-4 text-xs sm:text-sm text-slate-600 whitespace-nowrap sm:whitespace-normal">{row.station_name || `สาขา ${row.station_id}`}</td>
                                         <td className="p-3 sm:p-4 font-bold text-center text-sm whitespace-nowrap">{row.locker_id}</td>
-                                        <td className="p-3 sm:p-4 text-xs sm:text-sm tabular-nums whitespace-nowrap">{row.room_number || '-'}</td>
+                                        <td className="p-3 sm:p-4 text-xs sm:text-sm tabular-nums whitespace-nowrap">{formatRoom(row.room_number)}</td>
                                         <td className="p-3 sm:p-4 text-xs sm:text-sm tabular-nums whitespace-nowrap">{row.phone || '-'}</td>
                                         <td className="p-3 sm:p-4 text-xs sm:text-sm">{row.staff_name
                                             || (row.staff_id

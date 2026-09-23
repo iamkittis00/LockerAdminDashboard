@@ -9,6 +9,7 @@ import {
     getLockerSlot,
     getDoorState,
     isScreenSlot,
+    formatRoom,
     formatDateTime,
 } from "./lockerLayout";
 import { fetchLockers, fetchLockerDetail, unlockLocker as apiUnlockLocker } from "../api/lockers";
@@ -282,7 +283,7 @@ function LockerBox({ stationId = null }) {
                                     <p><strong>หมายเลขตู้</strong> {getLockerSlot(detail)}</p>
                                     <p><strong>ขนาด</strong> {detail.size || "-"}</p>
                                     <p><strong>เบอร์ผู้ฝาก</strong> {detail.phone_owner || "-"}</p>
-                                    <p><strong>ห้อง</strong> {detail.room_number || "-"}</p>
+                                    <p><strong>ห้อง</strong> {formatRoom(detail.room_number)}</p>
                                     <p><strong>เวลาฝาก</strong> {formatDateTime(detail.deposit_time)}</p>
                                     <p><strong>รหัสผ่าน</strong> {detail.pass_code || "-"}</p>
                                 </div>

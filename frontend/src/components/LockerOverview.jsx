@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { fetchLockers } from '../api/lockers';
-import { CABINETS, getLockerPosition, getLockerSlot, isScreenSlot } from './lockerLayout';
+import { CABINETS, formatRoom, getLockerPosition, getLockerSlot, isScreenSlot } from './lockerLayout';
 
 const OVERDUE_THRESHOLD_MS = 24 * 60 * 60 * 1000; // ค่าปริยาย 24 ชม. — ตรงกับที่ backend ตั้งไว้
 
@@ -160,7 +160,7 @@ function LockerOverview({ stationId = null, lockerPath = '/locker' }) {
                                     >
                                         <td className="px-5 py-3 font-bold text-slate-800">{l.slot}</td>
                                         <td className="px-5 py-3 text-slate-600">{cabinetLabel(l.slot)}</td>
-                                        <td className="px-5 py-3 text-slate-600">{l.room_number || '-'}</td>
+                                        <td className="px-5 py-3 text-slate-600 tabular-nums">{formatRoom(l.room_number)}</td>
                                         <td className="px-5 py-3 text-slate-600 tabular-nums">{formatPhone(l.phone_owner)}</td>
                                         <td className="px-5 py-3 text-slate-500 text-xs tabular-nums">{formatShortDateTime(l.deposit_time)}</td>
                                         <td className="px-5 py-3 text-slate-600 text-xs tabular-nums">{formatHoursMinutes(l.elapsedMs)}</td>

@@ -56,6 +56,13 @@ export function getDoorState(locker) {
     return { className: "door-free", label: "ว่าง" };
 }
 
+// หมายเลขห้องจริงยาวไม่เกิน 4 ตัว — ค่าที่ยาวกว่านั้นคือข้อมูลเพี้ยนจากฝั่งตู้
+// (เช่นลูกค้าพิมพ์เบอร์โทรใส่ช่องห้อง) ตัดให้เหลือ 4 ตัวแรกทุกจุดที่แสดงผล
+export function formatRoom(value) {
+    if (value === null || value === undefined || String(value).trim() === '') return '-';
+    return String(value).trim().slice(0, 4);
+}
+
 export function formatDateTime(value) {
     if (!value) return "-";
     const d = new Date(value);
