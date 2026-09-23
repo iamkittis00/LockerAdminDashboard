@@ -79,10 +79,10 @@ function HistoryModal({ stationId = null, onClose }) {
                     <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
                         {/* ไม่บังคับความกว้างขั้นต่ำแล้ว — ช่องสั้นๆ ห้ามตกบรรทัด
                             ส่วนรายละเอียดปล่อยให้ตัดบรรทัดแทนการดัน scroll แนวนอน */}
-                        <table className="w-full text-left border-collapse min-w-[640px] sm:min-w-0">
+                        <table className="w-full text-left border-collapse min-w-[700px] sm:min-w-0">
                             <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs sm:text-sm whitespace-nowrap">
-                                    <th className="p-3 sm:p-4">เวลา</th><th className="p-3 sm:p-4">สาขา</th><th className="p-3 sm:p-4">ตู้</th><th className="p-3 sm:p-4">เบอร์โทร</th><th className="p-3 sm:p-4">ผู้ทำรายการ</th><th className="p-3 sm:p-4">การกระทำ</th><th className="p-3 sm:p-4">รายละเอียด</th>
+                                    <th className="p-3 sm:p-4">เวลา</th><th className="p-3 sm:p-4">สาขา</th><th className="p-3 sm:p-4">ตู้</th><th className="p-3 sm:p-4">ห้อง</th><th className="p-3 sm:p-4">เบอร์โทร</th><th className="p-3 sm:p-4">ผู้ทำรายการ</th><th className="p-3 sm:p-4">การกระทำ</th><th className="p-3 sm:p-4">รายละเอียด</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -91,6 +91,7 @@ function HistoryModal({ stationId = null, onClose }) {
                                         <td className="p-3 sm:p-4 text-[10px] sm:text-xs text-slate-500 whitespace-nowrap">{formatTimestamp(row.timestamp)}</td>
                                         <td className="p-3 sm:p-4 text-xs sm:text-sm text-slate-600 whitespace-nowrap sm:whitespace-normal">{row.station_name || `สาขา ${row.station_id}`}</td>
                                         <td className="p-3 sm:p-4 font-bold text-center text-sm whitespace-nowrap">{row.locker_id}</td>
+                                        <td className="p-3 sm:p-4 text-xs sm:text-sm tabular-nums whitespace-nowrap">{row.room_number || '-'}</td>
                                         <td className="p-3 sm:p-4 text-xs sm:text-sm tabular-nums whitespace-nowrap">{row.phone || '-'}</td>
                                         <td className="p-3 sm:p-4 text-xs sm:text-sm">{row.staff_name
                                             || (row.staff_id

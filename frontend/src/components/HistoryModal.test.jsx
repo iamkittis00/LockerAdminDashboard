@@ -13,6 +13,7 @@ const ROWS = [
         station_id: 1,
         station_name: "LockerStation 1",
         locker_id: 5,
+        room_number: "101",
         phone: "0863841265",
         staff_id: null,
         staff_name: null,
@@ -25,6 +26,7 @@ const ROWS = [
         station_id: 1,
         station_name: "LockerStation 1",
         locker_id: 4,
+        room_number: null,
         phone: "0863841265",
         staff_name: "สมชาย ใจดี",
         action: "web_unlock",
@@ -45,6 +47,16 @@ describe("HistoryModal", () => {
     it("ดึงประวัติเฉพาะสาขาที่เปิดอยู่", async () => {
         render(<HistoryModal stationId="1" onClose={() => {}} />);
         await waitFor(() => expect(fetchTransactions).toHaveBeenCalledWith(100, 0, "1"));
+    });
+
+    it("มีคอลัมน์ห้อง — แถวที่มีห้องแสดงเลขห้อง แถวที่ไม่มีขึ้นขีด", async () => {
+        render(<HistoryModal stationId="1" onClose={() => {}} />);
+        expect(await screen.findByRole("columnheader", { name: "ห้อง" })).toBeInTheDocument();
+
+        const withRoom = rowOf("Deposit size L with pass_code");
+        expect(within(withRoom).getByText("101")).toBeInTheDocument();
+        const noRoom = rowOf("ส่งคำสั่ง MQTT เปิดตู้");
+        expect(within(noRoom).getByText("-")).toBeInTheDocument();
     });
 
     it("มีคอลัมน์สาขา และแสดงชื่อสาขาในแต่ละแถว", async () => {
