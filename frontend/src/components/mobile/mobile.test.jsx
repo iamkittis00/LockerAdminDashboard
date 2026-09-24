@@ -114,8 +114,9 @@ describe("HistoryList (มือถือ)", () => {
         render(<HistoryList stationId="1" />);
 
         const item = (await screen.findByText("รับของคืน")).closest("li");
-        expect(item).toHaveClass("bg-emerald-50");
-        expect(screen.getByText("ฝากของ").closest("li")).toHaveClass("bg-sky-50");
+        expect(screen.getByText("รับของคืน")).toHaveClass("text-emerald-700");
+        expect(item).not.toHaveClass("bg-emerald-50");
+        expect(screen.getByText("ฝากของ")).toHaveClass("text-sky-700");
         expect(within(item).getByText("ตู้ 1")).toBeInTheDocument();
         expect(within(item).getByText("ห้อง 1116")).toBeInTheDocument();
         expect(within(item).getByText("เบอร์โทร 081-633-9304")).toBeInTheDocument();
@@ -132,7 +133,7 @@ describe("HistoryList (มือถือ)", () => {
         });
         render(<HistoryList stationId="1" />);
         expect(await screen.findByText("โดย test")).toBeInTheDocument();
-        expect(screen.getByText("แอดมินสั่งเปิด").closest("li")).toHaveClass("bg-amber-50");
+        expect(screen.getByText("แอดมินสั่งเปิด")).toHaveClass("text-amber-700");
     });
 });
 

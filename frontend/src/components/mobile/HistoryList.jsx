@@ -14,10 +14,10 @@ const ACTION_TEXT = {
     admin_clear: 'ล้างข้อมูลตู้',
     delete: 'ลบข้อมูล',
 };
-// สีพื้นแถว + สีหัวรายการ แยกตามประเภท ให้กวาดตาดูง่าย
-const DEPOSIT_TONE = { row: 'bg-sky-50', label: 'text-sky-700' };
-const RETURN_TONE = { row: 'bg-emerald-50', label: 'text-emerald-700' };
-const OPEN_TONE = { row: 'bg-amber-50', label: 'text-amber-700' };
+// สีตัวหนังสือหัวรายการ แยกตามประเภท ให้กวาดตาดูง่าย (ไม่ใส่พื้น)
+const DEPOSIT_TONE = 'text-sky-700';
+const RETURN_TONE = 'text-emerald-700';
+const OPEN_TONE = 'text-amber-700';
 const ACTION_TONE = {
     deposit: DEPOSIT_TONE,
     assign: DEPOSIT_TONE,
@@ -25,8 +25,7 @@ const ACTION_TONE = {
     web_unlock: OPEN_TONE,
     unlock: OPEN_TONE,
 };
-const DEFAULT_TONE = { row: '', label: 'text-slate-500' };
-const toneOf = (action) => ACTION_TONE[actionKey(action)] || DEFAULT_TONE;
+const toneOf = (action) => ACTION_TONE[actionKey(action)] || 'text-slate-500';
 
 function actorText(row) {
     if (row.staff_name) return `โดย ${row.staff_name}`;
@@ -104,8 +103,8 @@ function HistoryList({ stationId = null, stationName = '' }) {
                         <h2 className="text-xs font-bold text-slate-500 mb-1.5">{g.label}</h2>
                         <ul className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
                             {g.items.map((row) => (
-                                <li key={row.trans_id} className={`px-4 py-3 flex flex-col gap-1 leading-snug ${toneOf(row.action).row}`}>
-                                    <div className={`text-[12.5px] font-bold ${toneOf(row.action).label}`}>
+                                <li key={row.trans_id} className="px-4 py-3 flex flex-col gap-1 leading-snug">
+                                    <div className={`text-[12.5px] font-bold ${toneOf(row.action)}`}>
                                         {ACTION_TEXT[actionKey(row.action)] || row.action || '-'}
                                     </div>
                                     <div className="flex items-baseline gap-3">
