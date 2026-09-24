@@ -73,7 +73,6 @@ function DashboardPage() {
                 {mobileView === 'settings' && (
                     <SettingsView
                         username={sessionStorage.getItem('username')}
-                        roleLabel="พนักงานสาขา"
                         stationName={stationName}
                         onChangePassword={() => setIsPasswordOpen(true)}
                         onLogout={handleLogout}

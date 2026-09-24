@@ -231,7 +231,6 @@ function CeoStationPage() {
                 {mobileView === 'settings' && (
                     <SettingsView
                         username={sessionStorage.getItem('username')}
-                        roleLabel="ผู้บริหาร"
                         onChangePassword={() => setIsPasswordOpen(true)}
                         onLogout={handleLogout}
                     />

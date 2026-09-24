@@ -1,21 +1,18 @@
-import { KeyRound, LogOut, ChevronRight } from 'lucide-react';
+import { KeyRound, LogOut, ChevronRight, User } from 'lucide-react';
 
 // หน้าตั้งค่าของมุมมองมือถือ — ที่อยู่ของเปลี่ยนรหัสผ่านและออกจากระบบ
-function SettingsView({ username, roleLabel, stationName, onChangePassword, onLogout }) {
-    const initial = (username || '?').charAt(0).toUpperCase();
+function SettingsView({ username, stationName, onChangePassword, onLogout }) {
     return (
         <div className="flex flex-col gap-3">
             <h1 className="text-xl font-extrabold text-slate-900">ตั้งค่า</h1>
 
             <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-4">
-                <div className="w-12 h-12 rounded-full bg-brand-tint text-brand text-lg font-extrabold flex items-center justify-center shrink-0">
-                    {initial}
+                <div className="w-12 h-12 rounded-full bg-brand-tint text-brand flex items-center justify-center shrink-0">
+                    <User size={22} />
                 </div>
                 <div className="min-w-0">
                     <div className="text-[15px] font-bold text-slate-800 truncate">{username || '-'}</div>
-                    <div className="text-xs text-slate-500 truncate">
-                        {roleLabel}{stationName ? ` ${stationName}` : ''}
-                    </div>
+                    {stationName && <div className="text-xs text-slate-500 truncate">{stationName}</div>}
                 </div>
             </div>
 
