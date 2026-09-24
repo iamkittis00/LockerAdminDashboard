@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { UserPlus, KeyRound, X, Users, Building2, Clock, Copy, Check, AlertTriangle, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchStaff, createStaff, deleteStaff, resetStaffPassword } from '../api/staff';
+import useIsMobile from '../hooks/useIsMobile';
 
 // "วันนี้ 09:14" / "12/08 17:22" — ให้อ่านเร็วกว่าวันที่เต็ม
 function formatLastLogin(value) {
@@ -110,6 +111,7 @@ function StaffManagementPanel({ stationId, stationName, onCountChange }) {
     const [passwordResult, setPasswordResult] = useState(null);
     const [confirmDelete, setConfirmDelete] = useState(null);
     const [busyUserId, setBusyUserId] = useState(null);
+    const isMobile = useIsMobile();
 
     // เก็บใน ref เพื่อไม่ให้ load() เปลี่ยน identity ทุกครั้งที่ parent re-render
     const onCountChangeRef = useRef(onCountChange);
@@ -209,6 +211,58 @@ function StaffManagementPanel({ stationId, stationName, onCountChange }) {
                     <p className="text-sm font-medium text-slate-600">ยังไม่มีพนักงานในสาขานี้</p>
                     <p className="text-xs text-slate-400 mt-1">กด "เพิ่มพนักงาน" เพื่อสร้างบัญชีให้พนักงานเข้าใช้ระบบ</p>
                 </div>
+            ) : isMobile ? (
+                <ul className="divide-y divide-slate-100">
+                    {staff.map((m) => {
+                        const lastLogin = formatLastLogin(m.last_login);
+                        return (
+                            <li key={m.user_id} className="px-4 py-3.5 flex flex-col gap-2.5">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <div className={`text-[15px] font-bold truncate ${m.is_active ? 'text-slate-800' : 'text-slate-500'}`}>
+                                            {m.fullname || '-'}
+                                        </div>
+                                        <div className="text-xs text-slate-400">{m.username}</div>
+                                    </div>
+                                    {!m.is_active ? (
+                                        <span className="px-2.5 py-0.5 rounded-md bg-slate-200 text-slate-600 text-xs font-bold whitespace-nowrap">ปิดใช้งาน</span>
+                                    ) : lastLogin ? (
+                                        <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-xs font-bold whitespace-nowrap">ใช้งานอยู่</span>
+                                    ) : (
+                                        <span className="px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-800 text-xs font-bold whitespace-nowrap">ยังไม่เคยเข้า</span>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-4 text-[13px] text-slate-600">
+                                    <span className="tabular-nums">{m.phone || '-'}</span>
+                                    <span className={`inline-flex items-center gap-1.5 ${lastLogin ? 'text-slate-500' : 'text-amber-700'}`}>
+                                        <Clock size={13} />
+                                        {lastLogin || 'รอเข้าใช้ครั้งแรก'}
+                                    </span>
+                                </div>
+                                <div className="flex gap-2">
+                                    {Boolean(m.is_active) && (
+                                        <button
+                                            onClick={() => handleResetPassword(m)}
+                                            disabled={busyUserId === m.user_id}
+                                            className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-lg border border-slate-200 bg-white text-[13px] font-semibold text-slate-600 disabled:opacity-50"
+                                        >
+                                            <KeyRound size={14} />
+                                            รีเซ็ตรหัส
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => setConfirmDelete(m)}
+                                        disabled={busyUserId === m.user_id}
+                                        className={`${m.is_active ? 'w-24' : 'flex-1'} flex items-center justify-center gap-1.5 h-10 rounded-lg border border-red-200 bg-red-50 text-[13px] font-semibold text-red-600 disabled:opacity-50`}
+                                    >
+                                        <Trash2 size={14} />
+                                        ลบ
+                                    </button>
+                                </div>
+                            </li>
+                        );
+                    })}
+                </ul>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">

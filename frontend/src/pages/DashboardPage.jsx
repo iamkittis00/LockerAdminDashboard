@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Clock, Settings as SettingsIcon, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
@@ -6,6 +6,11 @@ import { clearSession } from '../api/client';
 import LockerOverview from '../components/LockerOverview';
 import HistoryModal from '../components/HistoryModal';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import MobileNav from '../components/mobile/MobileNav';
+import HistoryList from '../components/mobile/HistoryList';
+import SettingsView from '../components/mobile/SettingsView';
+import useIsMobile from '../hooks/useIsMobile';
+import { fetchStations } from '../api/stations';
 
 // หน้าหลักของพนักงานประจำสาขา
 function DashboardPage() {
@@ -21,6 +26,64 @@ function DashboardPage() {
         clearSession();
         navigate('/');
     };
+
+    const isMobile = useIsMobile();
+    const [mobileView, setMobileView] = useState('lockers');
+    const [stationName, setStationName] = useState('');
+
+    // ชื่อสาขาใช้แค่หัวเพจ/หน้าตั้งค่าของมุมมองมือถือ — admin ได้เฉพาะสาขาตัวเองอยู่แล้ว
+    useEffect(() => {
+        if (!isMobile) return undefined;
+        let cancelled = false;
+        (async () => {
+            try {
+                const result = await fetchStations();
+                const own = (result.data || [])[0];
+                if (!cancelled && own) setStationName(own.station_name || '');
+            } catch (error) {
+                console.error('Error fetching station:', error);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [isMobile]);
+
+    const passwordModal = isPasswordOpen && (
+        <ChangePasswordModal
+            mustChange={mustChangePassword}
+            onClose={() => setIsPasswordOpen(false)}
+            onSuccess={() => { clearSession(); setTimeout(() => navigate('/'), 1000); }}
+        />
+    );
+
+    // มุมมองแอปมือถือ: เมนูล่าง + หน้าย่อย (จอใหญ่ใช้หน้าเดิมด้านล่างทั้งหมด)
+    if (isMobile) {
+        return (
+            <div className="min-h-screen px-4 pt-5 pb-28">
+                <Toaster position="top-center" />
+                {mobileView === 'lockers' && (
+                    <>
+                        <div className="mb-4">
+                            <h1 className="text-xl font-extrabold text-slate-900">{stationName || 'จัดการล็อกเกอร์'}</h1>
+                            <p className="text-[13px] text-slate-500 mt-0.5">เปิด-ปิดตู้ และตรวจสอบสถานะการใช้งาน</p>
+                        </div>
+                        <LockerOverview />
+                    </>
+                )}
+                {mobileView === 'history' && <HistoryList stationName={stationName} />}
+                {mobileView === 'settings' && (
+                    <SettingsView
+                        username={sessionStorage.getItem('username')}
+                        roleLabel="พนักงานสาขา"
+                        stationName={stationName}
+                        onChangePassword={() => setIsPasswordOpen(true)}
+                        onLogout={handleLogout}
+                    />
+                )}
+                <MobileNav active={mobileView} onChange={setMobileView} />
+                {passwordModal}
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen p-4 sm:p-6 lg:p-10">
@@ -61,13 +124,7 @@ function DashboardPage() {
                 <LockerOverview />
             </div>
 
-            {isPasswordOpen && (
-                <ChangePasswordModal
-                    mustChange={mustChangePassword}
-                    onClose={() => setIsPasswordOpen(false)}
-                    onSuccess={() => { clearSession(); setTimeout(() => navigate('/'), 1000); }}
-                />
-            )}
+            {passwordModal}
 
             {isHistoryOpen && <HistoryModal onClose={() => setIsHistoryOpen(false)} />}
         </div>

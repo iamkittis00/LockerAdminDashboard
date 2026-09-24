@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, ArrowRight, LogOut, AlertTriangle } from 'lucide-react';
+import { Building2, ArrowRight, LogOut, AlertTriangle, SlidersHorizontal, ArrowLeft } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { fetchStations } from '../api/stations';
 import { clearSession } from '../api/client';
+import SettingsView from '../components/mobile/SettingsView';
+import ChangePasswordModal from '../components/ChangePasswordModal';
+import useIsMobile from '../hooks/useIsMobile';
 
 function CeoStationPickerPage() {
     const navigate = useNavigate();
     const [stations, setStations] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const isMobile = useIsMobile();
+    const [showSettings, setShowSettings] = useState(false);
+    const [isPasswordOpen, setIsPasswordOpen] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -31,8 +37,35 @@ function CeoStationPickerPage() {
         navigate('/');
     };
 
+    if (isMobile && showSettings) {
+        return (
+            <div className="min-h-screen px-4 pt-4 pb-10">
+                <Toaster position="top-center" />
+                <button
+                    onClick={() => setShowSettings(false)}
+                    className="flex items-center gap-1.5 py-1 mb-2 text-sm font-medium text-slate-500"
+                >
+                    <ArrowLeft size={15} />
+                    ทุกสาขา
+                </button>
+                <SettingsView
+                    username={sessionStorage.getItem('username')}
+                    roleLabel="ผู้บริหาร"
+                    onChangePassword={() => setIsPasswordOpen(true)}
+                    onLogout={handleLogout}
+                />
+                {isPasswordOpen && (
+                    <ChangePasswordModal
+                        onClose={() => setIsPasswordOpen(false)}
+                        onSuccess={() => { clearSession(); setTimeout(() => navigate('/'), 1000); }}
+                    />
+                )}
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen p-4 sm:p-6 lg:p-10">
+        <div className="relative min-h-screen p-4 sm:p-6 lg:p-10">
             <Toaster position="top-right" />
             <div className="max-w-3xl mx-auto flex flex-col gap-6">
 
@@ -43,6 +76,15 @@ function CeoStationPickerPage() {
                             เลือกสาขาเพื่อดูตู้ล็อกเกอร์และจัดการพนักงาน
                         </p>
                     </div>
+                    {isMobile ? (
+                    <button
+                        onClick={() => setShowSettings(true)}
+                        aria-label="ตั้งค่า"
+                        className="absolute right-4 top-4 w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center"
+                    >
+                        <SlidersHorizontal size={18} className="text-slate-600" />
+                    </button>
+                    ) : (
                     <button
                         onClick={handleLogout}
                         className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors self-start whitespace-nowrap"
@@ -50,6 +92,7 @@ function CeoStationPickerPage() {
                         <LogOut size={16} />
                         ออกจากระบบ
                     </button>
+                    )}
                 </div>
 
                 {isLoading ? (
@@ -96,7 +139,7 @@ function StationCard({ station, onOpen }) {
             onClick={onOpen}
             className={`flex flex-col gap-3.5 px-5 py-4 rounded-xl border text-left transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 group ${
                 needsAttention
-                    ? 'border-red-200 border-l-[3px] border-l-red-500 bg-white'
+                    ? 'border-red-200 bg-red-50'
                     : isClosed
                         ? 'border-slate-200 bg-slate-50'
                         : 'border-slate-200 bg-white hover:border-brand'

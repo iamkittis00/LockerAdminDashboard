@@ -3,6 +3,8 @@ import { Box, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { fetchLockers } from '../api/lockers';
 import { CABINETS, formatRoom, getLockerPosition, getLockerSlot, isScreenSlot } from './lockerLayout';
+import useIsMobile from '../hooks/useIsMobile';
+import { formatDateTimeShortBE, formatDuration } from './mobile/format';
 
 const OVERDUE_THRESHOLD_MS = 24 * 60 * 60 * 1000; // ค่าปริยาย 24 ชม. — ตรงกับที่ backend ตั้งไว้
 
@@ -43,6 +45,7 @@ function cabinetLabel(slot) {
 // ส่วนเนื้อหาหลักของการจัดการตู้ — ใช้ร่วมกันทั้งหน้าแอดมินและหน้า CEO รายสาขา
 function LockerOverview({ stationId = null, lockerPath = '/locker' }) {
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
     const [lockers, setLockers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -139,6 +142,41 @@ function LockerOverview({ stationId = null, lockerPath = '/locker' }) {
                         <p className="text-xs text-slate-400 mt-1">พอมีลูกค้าฝากของ รายการจะขึ้นแสดงที่นี่</p>
                     </div>
                 ) : (
+                    isMobile ? (
+                    <ul className="flex flex-col gap-2.5 p-3">
+                        {occupied.map((l) => (
+                            <li
+                                key={l.locker_id}
+                                className={`flex justify-between gap-3 rounded-xl border px-4 py-3.5 ${
+                                    l.is_overdue ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'
+                                }`}
+                            >
+                                <div className="flex flex-col gap-1.5 leading-normal min-w-0">
+                                    <div className="flex items-baseline gap-2.5">
+                                        <span className="text-[17px] font-extrabold text-slate-900">ตู้ {l.slot}</span>
+                                        <span className="text-sm font-semibold text-slate-700">ห้อง {formatRoom(l.room_number)}</span>
+                                    </div>
+                                    <div className="text-[13.5px] text-slate-600 tabular-nums">เบอร์โทร {formatPhone(l.phone_owner)}</div>
+                                    <div className="text-[13px] text-slate-500 tabular-nums">ฝากเมื่อ {formatDateTimeShortBE(l.deposit_time)}</div>
+                                </div>
+                                <div className="flex flex-col items-end justify-between gap-2 shrink-0">
+                                    {l.is_overdue ? (
+                                        <span className="px-2.5 py-0.5 rounded-md bg-red-600 text-white text-xs font-bold">เกินกำหนด</span>
+                                    ) : (
+                                        <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-xs font-bold">ปกติ</span>
+                                    )}
+                                    {l.is_overdue ? (
+                                        <span className="text-sm font-bold text-red-600 whitespace-nowrap">
+                                            เกินมา {formatDuration(l.elapsedMs - OVERDUE_THRESHOLD_MS)}
+                                        </span>
+                                    ) : (
+                                        <span className="text-[12.5px] text-slate-500 whitespace-nowrap">{formatDuration(l.elapsedMs)}</span>
+                                    )}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                    ) : (
                     <div className="overflow-x-auto overflow-y-auto max-h-[26rem]">
                         <table className="w-full text-left border-collapse">
                             <thead className="sticky top-0 z-10">
@@ -185,6 +223,7 @@ function LockerOverview({ stationId = null, lockerPath = '/locker' }) {
                             </tbody>
                         </table>
                     </div>
+                    )
                 )}
             </div>
         </div>

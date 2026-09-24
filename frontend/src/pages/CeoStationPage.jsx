@@ -8,6 +8,10 @@ import HistoryModal from '../components/HistoryModal';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { clearSession } from '../api/client';
 import { fetchStations, updateStation } from '../api/stations';
+import MobileNav from '../components/mobile/MobileNav';
+import HistoryList from '../components/mobile/HistoryList';
+import SettingsView from '../components/mobile/SettingsView';
+import useIsMobile from '../hooks/useIsMobile';
 
 const TABS = [
     { key: 'lockers', label: 'ตู้ล็อกเกอร์', icon: Box },
@@ -110,6 +114,11 @@ function CeoStationPage() {
     const [isRenameOpen, setIsRenameOpen] = useState(false);
 
     const activeTab = searchParams.get('tab') === 'staff' ? 'staff' : 'lockers';
+    const isMobile = useIsMobile();
+    // มุมมองมือถือมีหน้าเพิ่ม (ประวัติ/ตั้งค่า) — ใช้ ?tab= เดิม จะได้ refresh แล้วอยู่หน้าเดิม
+    const MOBILE_VIEWS = ['lockers', 'history', 'staff', 'settings'];
+    const mobileView = MOBILE_VIEWS.includes(searchParams.get('tab')) ? searchParams.get('tab') : 'lockers';
+    const setMobileView = (v) => setSearchParams(v === 'lockers' ? {} : { tab: v }, { replace: true });
 
     // เรียกซ้ำได้หลังแก้ชื่อสาขา — ตัว effect ใช้โครง IIFE + cancelled ตามแบบแผนของโปรเจค
     const loadStation = useCallback(async () => {
@@ -156,6 +165,83 @@ function CeoStationPage() {
         clearSession();
         navigate('/');
     };
+
+    const modals = (
+        <>
+            {isPasswordOpen && (
+                <ChangePasswordModal
+                    onClose={() => setIsPasswordOpen(false)}
+                    onSuccess={() => { clearSession(); setTimeout(() => navigate('/'), 1000); }}
+                />
+            )}
+            {isHistoryOpen && (
+                <HistoryModal stationId={stationId} onClose={() => setIsHistoryOpen(false)} />
+            )}
+            {isRenameOpen && (
+                <RenameStationModal
+                    station={station}
+                    stationId={stationId}
+                    onClose={() => setIsRenameOpen(false)}
+                    onSaved={handleStationSaved}
+                />
+            )}
+        </>
+    );
+
+    // มุมมองแอปมือถือ: เมนูล่างแทนปุ่มแถวบนและแท็บ (จอใหญ่ใช้หน้าเดิมด้านล่าง)
+    if (isMobile) {
+        return (
+            <div className="min-h-screen px-4 pt-4 pb-28">
+                <Toaster position="top-center" />
+                {mobileView !== 'settings' && (
+                    <button
+                        onClick={() => navigate('/ceo')}
+                        className="flex items-center gap-1.5 py-1 mb-2 text-sm font-medium text-slate-500"
+                    >
+                        <ArrowLeft size={15} />
+                        ทุกสาขา
+                    </button>
+                )}
+
+                {mobileView === 'lockers' && (
+                    <>
+                        <div className="mb-4">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <h1 className="text-xl font-extrabold text-slate-900">{stationLabel}</h1>
+                                <button
+                                    onClick={() => setIsRenameOpen(true)}
+                                    aria-label="แก้ไขข้อมูลสาขา"
+                                    className="p-1.5 rounded-lg text-slate-400"
+                                >
+                                    <Pencil size={15} />
+                                </button>
+                                {isClosed && (
+                                    <span className="px-2 py-0.5 rounded-md bg-slate-200 text-slate-600 text-xs font-semibold">ปิดให้บริการ</span>
+                                )}
+                            </div>
+                            <p className="text-[13px] text-slate-500 mt-0.5">รหัสสาขา #{stationId}</p>
+                        </div>
+                        <LockerOverview stationId={stationId} lockerPath={`/ceo/${stationId}/locker`} />
+                    </>
+                )}
+                {mobileView === 'history' && <HistoryList stationId={stationId} stationName={stationLabel} />}
+                {mobileView === 'staff' && (
+                    <StaffManagementPanel stationId={stationId} stationName={stationLabel} onCountChange={setStaffCount} />
+                )}
+                {mobileView === 'settings' && (
+                    <SettingsView
+                        username={sessionStorage.getItem('username')}
+                        roleLabel="ผู้บริหาร"
+                        onChangePassword={() => setIsPasswordOpen(true)}
+                        onLogout={handleLogout}
+                    />
+                )}
+
+                <MobileNav active={mobileView} onChange={setMobileView} showStaff />
+                {modals}
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen p-4 sm:p-6 lg:p-10">
@@ -263,25 +349,7 @@ function CeoStationPage() {
                 )}
             </div>
 
-            {isPasswordOpen && (
-                <ChangePasswordModal
-                    onClose={() => setIsPasswordOpen(false)}
-                    onSuccess={() => { clearSession(); setTimeout(() => navigate('/'), 1000); }}
-                />
-            )}
-
-            {isHistoryOpen && (
-                <HistoryModal stationId={stationId} onClose={() => setIsHistoryOpen(false)} />
-            )}
-
-            {isRenameOpen && (
-                <RenameStationModal
-                    station={station}
-                    stationId={stationId}
-                    onClose={() => setIsRenameOpen(false)}
-                    onSaved={handleStationSaved}
-                />
-            )}
+            {modals}
         </div>
     );
 }
