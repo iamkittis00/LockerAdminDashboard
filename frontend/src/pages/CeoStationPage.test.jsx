@@ -70,7 +70,8 @@ describe("CeoStationPage", () => {
     it("badge จำนวนพนักงานมาจากยอดที่ backend ส่งมา ไม่ต้องเปิดแท็บก่อน", async () => {
         renderPage();
         const staffTab = await screen.findByRole("tab", { name: /พนักงาน/ });
-        expect(staffTab).toHaveTextContent("5");
+        // ยอดมาจาก fetch แบบ async — รอให้ขึ้นก่อน (CI ช้ากว่าเครื่อง dev)
+        await waitFor(() => expect(staffTab).toHaveTextContent("5"));
     });
 
     it("กดแท็บพนักงานแล้วสลับเนื้อหา ไม่ต้องเลื่อนหน้าจอ", async () => {
