@@ -14,6 +14,9 @@ const ACTION_TEXT = {
     admin_clear: 'ล้างข้อมูลตู้',
     delete: 'ลบข้อมูล',
 };
+// การสั่งเปิดจากเว็บ ไฮไลต์ทั้งแถวให้เห็นชัด
+const OPEN_ACTIONS = new Set(['web_unlock', 'unlock']);
+
 function actorText(row) {
     if (row.staff_name) return `โดย ${row.staff_name}`;
     if (row.staff_id) return 'พนักงานที่ถูกลบ';
@@ -90,8 +93,8 @@ function HistoryList({ stationId = null, stationName = '' }) {
                         <h2 className="text-xs font-bold text-slate-500 mb-1.5">{g.label}</h2>
                         <ul className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
                             {g.items.map((row) => (
-                                <li key={row.trans_id} className="px-4 py-3 flex flex-col gap-1 leading-snug">
-                                    <div className="text-[12.5px] font-bold text-slate-500">
+                                <li key={row.trans_id} className={`px-4 py-3 flex flex-col gap-1 leading-snug ${OPEN_ACTIONS.has(actionKey(row.action)) ? 'bg-amber-50' : ''}`}>
+                                    <div className={`text-[12.5px] font-bold ${OPEN_ACTIONS.has(actionKey(row.action)) ? 'text-amber-700' : 'text-slate-500'}`}>
                                         {ACTION_TEXT[actionKey(row.action)] || row.action || '-'}
                                     </div>
                                     <div className="flex items-baseline gap-3">
