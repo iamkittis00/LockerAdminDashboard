@@ -114,7 +114,8 @@ describe("HistoryList (มือถือ)", () => {
         render(<HistoryList stationId="1" />);
 
         const item = (await screen.findByText("รับของคืน")).closest("li");
-        expect(item).not.toHaveClass("bg-amber-50");
+        expect(item).toHaveClass("bg-emerald-50");
+        expect(screen.getByText("ฝากของ").closest("li")).toHaveClass("bg-sky-50");
         expect(within(item).getByText("ตู้ 1")).toBeInTheDocument();
         expect(within(item).getByText("ห้อง 1116")).toBeInTheDocument();
         expect(within(item).getByText("เบอร์โทร 081-633-9304")).toBeInTheDocument();
