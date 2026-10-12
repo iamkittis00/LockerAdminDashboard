@@ -250,6 +250,10 @@ class FakeCursor:
                 if st["station_id"] == p[2]:
                     st["station_name"], st["location"] = p[0], p[1]
             return
+        if q.startswith("SELECT status FROM stations WHERE station_id=%s LIMIT 1"):
+            st = next((s for s in self.db.stations if s["station_id"] == p[0]), None)
+            self._scalar_rows([(st["status"],)] if st else [])
+            return
         if "FROM stations WHERE station_id=%s LIMIT 1" in q:
             self._scalar_rows([1] if any(s["station_id"] == p[0] for s in self.db.stations) else [])
             return

@@ -136,6 +136,8 @@ def create_access_token(username: str, password_hash: str) -> str:
 # ==========================================
 ROLE_ADMIN = "admin"
 ROLE_CEO = "ceo"
+# สาขา status 0 = ปิดให้บริการ: แตะข้อมูลสาขานั้นไม่ได้ทุกทาง (ยกเว้นเห็นในรายการสาขา)
+STATION_CLOSED_DETAIL = "สาขานี้ปิดให้บริการ"
 ALLOWED_ROLES = (ROLE_ADMIN, ROLE_CEO)
 
 # transactions.action เป็น ENUM('deposit','withdraw','web_unlock','admin_clear')
@@ -188,6 +190,9 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
             status_code=403,
             detail="บัญชีนี้ยังไม่ได้ผูกกับสาขา กรุณาติดต่อผู้ดูแลระบบ",
         )
+    # สาขาถูกปิด = พนักงานสาขานั้นใช้งานต่อไม่ได้ทันที (401 ให้หน้าเว็บพากลับไปล็อกอิน)
+    if role == ROLE_ADMIN and not station_is_open(station_id):
+        raise HTTPException(status_code=401, detail=STATION_CLOSED_DETAIL)
 
     return {
         "user_id": row["user_id"],
@@ -211,6 +216,7 @@ def resolve_station_id(user: dict, requested) -> int:
     if user["role"] == ROLE_CEO:
         if requested is None:
             raise HTTPException(status_code=400, detail="กรุณาระบุสาขาที่ต้องการดู (station_id)")
+        require_open_station(int(requested))
         return int(requested)
 
     own = user["station_id"]
@@ -393,6 +399,24 @@ def station_exists(station_id: int) -> bool:
         cursor.close()
         conn.close()
 
+def station_is_open(station_id) -> bool:
+    """เปิดให้บริการ = status 1 เท่านั้น — NULL/ไม่พบสาขา ถือว่าปิด (fail closed)"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT status FROM stations WHERE station_id=%s LIMIT 1", (station_id,))
+        row = cursor.fetchone()
+    finally:
+        cursor.close()
+        conn.close()
+    return bool(row) and row[0] is not None and int(row[0]) == 1
+
+def require_open_station(station_id) -> None:
+    if not station_is_open(station_id):
+        raise HTTPException(status_code=403, detail=STATION_CLOSED_DETAIL)
+
 # ==========================================
 # SCHEMAS
 # ==========================================
@@ -528,6 +552,7 @@ def rename_station(station_id: int, data: StationUpdate, user: dict = Depends(re
     """เปลี่ยนชื่อ/ที่ตั้งสาขา — ให้เฉพาะผู้บริหาร เพราะชื่อนี้โชว์กับทุกคนทุกหน้า"""
     if not station_exists(station_id):
         raise HTTPException(status_code=404, detail="ไม่พบสาขาที่ระบุ")
+    require_open_station(station_id)
 
     name = data.station_name.strip()
     if not name:
@@ -646,6 +671,8 @@ def login(data: LoginData, request: Request):
                 status_code=403,
                 detail="บัญชีนี้ยังไม่ได้ผูกกับสาขา กรุณาติดต่อผู้ดูแลระบบ",
             )
+        if role == ROLE_ADMIN:
+            require_open_station(account["station_id"])
 
         clear_login_failures(data.username, request)
 
@@ -897,6 +924,7 @@ def list_staff(station_id: Optional[int] = None, user: dict = Depends(get_curren
 def create_staff(data: StaffCreate, user: dict = Depends(require_ceo)):
     if not station_exists(data.station_id):
         raise HTTPException(status_code=400, detail="ไม่พบสาขาที่ระบุ")
+    require_open_station(data.station_id)
 
     username = data.username.strip().lower()
     # กฎเดียวกับ scripts/set_user_role.py — กันช่องว่าง/อักขระพิเศษ/ไทย
@@ -956,6 +984,7 @@ def update_staff(user_id: int, data: StaffUpdate, user: dict = Depends(require_c
             raise HTTPException(status_code=404, detail="ไม่พบพนักงานคนนี้")
         if (target.get("role") or "").lower() != ROLE_ADMIN:
             raise HTTPException(status_code=403, detail="แก้ไขได้เฉพาะบัญชีพนักงานเท่านั้น")
+        require_open_station(target.get("station_id"))
 
         fields, values = [], []
         if data.fullname is not None:
@@ -965,6 +994,7 @@ def update_staff(user_id: int, data: StaffUpdate, user: dict = Depends(require_c
         if data.station_id is not None:
             if not station_exists(data.station_id):
                 raise HTTPException(status_code=400, detail="ไม่พบสาขาที่ระบุ")
+            require_open_station(data.station_id)
             fields.append("station_id=%s"); values.append(data.station_id)
         if data.is_active is not None:
             fields.append("is_active=%s"); values.append(1 if data.is_active else 0)
@@ -1001,6 +1031,7 @@ def reset_staff_password(user_id: int, user: dict = Depends(require_ceo)):
             raise HTTPException(status_code=404, detail="ไม่พบพนักงานคนนี้")
         if (target.get("role") or "").lower() != ROLE_ADMIN:
             raise HTTPException(status_code=403, detail="รีเซ็ตรหัสผ่านได้เฉพาะบัญชีพนักงานเท่านั้น")
+        require_open_station(target.get("station_id"))
 
         cursor.execute(
             "UPDATE users SET password=%s, must_change_password=1 WHERE user_id=%s",
@@ -1042,6 +1073,7 @@ def delete_staff(user_id: int, user: dict = Depends(require_ceo)):
             raise HTTPException(status_code=404, detail="ไม่พบพนักงานคนนี้")
         if (target.get("role") or "").lower() != ROLE_ADMIN:
             raise HTTPException(status_code=403, detail="ลบได้เฉพาะบัญชีพนักงานเท่านั้น")
+        require_open_station(target.get("station_id"))
 
         # ผูก role ไว้ใน WHERE ด้วยอีกชั้น กัน race ตอนมีคนเปลี่ยน role พร้อมกัน
         cursor.execute("DELETE FROM users WHERE user_id=%s AND role=%s", (user_id, ROLE_ADMIN))
