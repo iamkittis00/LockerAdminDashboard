@@ -101,10 +101,10 @@ describe("CeoStationPage", () => {
         expect(await screen.findByText("ตู้ที่กำลังใช้งาน")).toBeInTheDocument();
     });
 
-    it("สาขาที่ปิดให้บริการ ขึ้นป้ายกำกับไว้ข้างชื่อ", async () => {
+    it("สาขาที่ปิดให้บริการ เข้าผ่าน URL ตรงไม่ได้ ส่งกลับหน้ารวมสาขา", async () => {
         fetchStations.mockResolvedValue({ data: [{ ...STATION, status: 0 }] });
         renderPage();
-        expect(await screen.findByText("ปิดให้บริการ")).toBeInTheDocument();
+        expect(await screen.findByText("หน้ารวมสาขา")).toBeInTheDocument();
     });
 
     it("stationId ที่ไม่ใช่ตัวเลข เด้งกลับหน้ารวมสาขา", async () => {

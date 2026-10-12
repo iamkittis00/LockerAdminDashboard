@@ -116,6 +116,15 @@ describe("CeoStationPickerPage", () => {
         expect(mockNavigate).toHaveBeenCalledWith("/ceo/2");
     });
 
+    it("สาขาที่ปิดให้บริการ (status 0) กดเข้าไม่ได้", async () => {
+        const user = userEvent.setup();
+        renderPicker();
+        const card = await waitFor(() => cardOf("โรงแรม 3"));
+        expect(card).toBeDisabled();
+        await user.click(card);
+        expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
     it("ออกจากระบบแล้วล้าง session และกลับหน้า login", async () => {
         const user = userEvent.setup();
         sessionStorage.setItem("token", "t");

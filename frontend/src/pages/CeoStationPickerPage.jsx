@@ -134,14 +134,16 @@ function StationCard({ station, onOpen }) {
     const needsAttention = overdue > 0 && !isClosed;
 
     return (
+        // สาขาที่ปิดให้บริการ (status 0) กดเข้าไม่ได้
         <button
-            onClick={onOpen}
-            className={`flex flex-col gap-3.5 px-5 py-4 rounded-xl border text-left transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 group ${
-                needsAttention
-                    ? 'border-red-200 bg-red-50'
-                    : isClosed
-                        ? 'border-slate-200 bg-slate-50'
-                        : 'border-slate-200 bg-white hover:border-brand'
+            onClick={isClosed ? undefined : onOpen}
+            disabled={isClosed}
+            className={`flex flex-col gap-3.5 px-5 py-4 rounded-xl border text-left transition-all group ${
+                isClosed
+                    ? 'border-slate-200 bg-slate-50 cursor-not-allowed'
+                    : `hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 ${
+                        needsAttention ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white hover:border-brand'
+                    }`
             }`}
         >
             <div className="flex items-center gap-3">
@@ -158,12 +160,9 @@ function StationCard({ station, onOpen }) {
                         {station.location || `รหัสสาขา ${station.station_id}`}
                     </div>
                 </div>
-                <ArrowRight
-                    size={18}
-                    className={`shrink-0 transition-transform group-hover:translate-x-1 ${
-                        isClosed ? 'text-slate-300' : 'text-slate-400'
-                    }`}
-                />
+                {!isClosed && (
+                    <ArrowRight size={18} className="shrink-0 text-slate-400 transition-transform group-hover:translate-x-1" />
+                )}
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">

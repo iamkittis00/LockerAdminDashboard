@@ -158,8 +158,12 @@ function CeoStationPage() {
         return <Navigate to="/ceo" replace />;
     }
 
+    // สาขาที่ปิดให้บริการ เข้าผ่าน URL ตรงก็ไม่ได้
+    if (station && Number(station.status) === 0) {
+        return <Navigate to="/ceo" replace />;
+    }
+
     const stationLabel = station?.station_name || `สาขา ${stationId}`;
-    const isClosed = station && Number(station.status) === 0;
 
     const handleLogout = () => {
         clearSession();
@@ -215,9 +219,6 @@ function CeoStationPage() {
                                 >
                                     <Pencil size={15} />
                                 </button>
-                                {isClosed && (
-                                    <span className="px-2 py-0.5 rounded-md bg-slate-200 text-slate-600 text-xs font-semibold">ปิดให้บริการ</span>
-                                )}
                             </div>
                             <p className="text-[13px] text-slate-500 mt-0.5">รหัสสาขา #{stationId}</p>
                         </div>
@@ -297,11 +298,6 @@ function CeoStationPage() {
                         >
                             <Pencil size={15} />
                         </button>
-                        {isClosed && (
-                            <span className="inline-flex px-2 py-1 rounded-md bg-slate-200 text-slate-600 text-xs font-semibold">
-                                ปิดให้บริการ
-                            </span>
-                        )}
                     </div>
                     <p className="text-sm text-slate-500 mt-1">
                         {station?.location ? `${station.location} · ` : ''}รหัสสาขา #{stationId}
